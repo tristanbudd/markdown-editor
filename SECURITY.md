@@ -4,7 +4,7 @@ We take security seriously. If you discover a security vulnerability, please rep
 
 ## Reporting a Vulnerability
 
-1. **Do not** open a public issue. Instead, contact the maintainers privately via email: `security@yourdomain.com` (replace with a real address) or open a private GitHub security advisory.
+1. **Do not** open a public issue. Instead, contact the maintainers privately via email: `contact@tristanbudd.com` (replace with a real address) or open a private GitHub security advisory.
 2. Provide a clear description, steps to reproduce, and potential impact.
 3. We will acknowledge receipt within 48 hours and work with you to resolve the issue.
 
