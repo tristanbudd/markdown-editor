@@ -2,21 +2,25 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import prettierConfig from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
+import reactPlugin from "eslint-plugin-react";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // Global plugin registrations and non-Prettier rules
   {
-    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
-    ignores: ["eslint.config.mjs"], // Exclude this file from Prettier rules
     plugins: {
-      prettier: prettierPlugin,
+      react: reactPlugin,
+      "react-hooks": reactHooksPlugin,
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
     },
     rules: {
-      // Prettier integration
-      "prettier/prettier": "error",
-
       // React best practices for Next.js and shadcn
       "react/react-in-jsx-scope": "off", // Not needed in Next.js
       "react/prop-types": "off", // Using TypeScript
@@ -52,6 +56,17 @@ const eslintConfig = defineConfig([
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "prefer-const": "error",
       "no-unused-expressions": "error",
+    },
+  },
+  // Prettier — applied to all files except this config file
+  {
+    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+    ignores: ["eslint.config.mjs"],
+    plugins: {
+      prettier: prettierPlugin,
+    },
+    rules: {
+      "prettier/prettier": "error",
     },
   },
   prettierConfig,
