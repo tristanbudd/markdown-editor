@@ -62,7 +62,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}
+      >
         <ThemeProvider disableTransitionOnChange enableSystem attribute="class" defaultTheme="dark">
           {children}
         </ThemeProvider>
