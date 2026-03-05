@@ -53,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html suppressHydrationWarning lang="en">
+    <html suppressHydrationWarning lang="en-GB">
       <head>
         {/* Preload KaTeX CSS for better performance */}
         <link
@@ -62,7 +62,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}
+      >
         <ThemeProvider disableTransitionOnChange enableSystem attribute="class" defaultTheme="dark">
           {children}
         </ThemeProvider>

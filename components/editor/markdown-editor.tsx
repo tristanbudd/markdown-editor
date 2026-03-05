@@ -1,0 +1,112 @@
+"use client"
+
+import { useEffect, useMemo, useRef, useState } from "react"
+
+import { EditorHeader } from "./editor-header"
+import { FormattingToolbar } from "./formatting-toolbar"
+import { MarkdownPreview } from "./markdown-preview"
+import { PlatformSelector, type PlatformType } from "./platform-selector"
+
+type ViewMode = "split" | "editor" | "preview"
+
+export function MarkdownEditor() {
+  const [markdown, setMarkdown] = useState("")
+  const [platform, setPlatform] = useState<PlatformType>("standard")
+  const [viewMode, setViewMode] = useState<ViewMode>("split")
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const stats = useMemo(() => {
+    const words = markdown.trim().split(/\s+/).filter(Boolean).length
+    const chars = markdown.length
+    const lines = markdown.length === 0 ? 0 : markdown.split("\n").length
+    return { words, chars, lines }
+  }, [markdown])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768 && viewMode === "split") {
+        setViewMode("editor")
+      }
+    }
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [viewMode])
+
+  return (
+    <div className="bg-background flex h-screen flex-col">
+      <EditorHeader
+        charCount={stats.chars}
+        hasContent={markdown.length > 0}
+        lineCount={stats.lines}
+        viewMode={viewMode}
+        wordCount={stats.words}
+        onViewModeChange={setViewMode}
+      />
+
+      <div className="border-border bg-toolbar-bg toolbar-scroll flex items-center gap-2 overflow-x-auto border-b px-2 py-1">
+        <div className="shrink-0">
+          <PlatformSelector platform={platform} onPlatformChange={setPlatform} />
+        </div>
+        <div className="bg-border h-5 w-px shrink-0" />
+        <FormattingToolbar />
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Editor */}
+          {(viewMode === "split" || viewMode === "editor") && (
+            <div
+              className={`flex flex-col ${viewMode === "split" ? "border-border w-1/2 border-r" : "w-full"}`}
+            >
+              <div className="border-border bg-muted/30 flex items-center justify-between border-b px-4 py-1.5">
+                <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                  Editor
+                </span>
+                <span className="text-muted-foreground font-mono text-[10px]">Markdown</span>
+              </div>
+              <div className="relative flex-1 overflow-hidden">
+                <textarea
+                  ref={textareaRef}
+                  aria-label="Markdown editor"
+                  className="bg-editor-bg text-foreground placeholder:text-muted-foreground absolute inset-0 h-full w-full resize-none overflow-x-hidden overflow-y-auto p-4 font-mono text-sm leading-relaxed focus:outline-none md:p-6"
+                  placeholder="Start writing markdown..."
+                  spellCheck={false}
+                  value={markdown}
+                  onChange={(e) => setMarkdown(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Preview */}
+          {(viewMode === "split" || viewMode === "preview") && (
+            <div className={`flex flex-col ${viewMode === "split" ? "w-1/2" : "w-full"}`}>
+              <div className="border-border bg-muted/30 flex items-center justify-between border-b px-4 py-1.5">
+                <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                  Preview
+                </span>
+                <span className="text-muted-foreground text-[10px] capitalize">
+                  {platform} style
+                </span>
+              </div>
+              <div className="bg-preview-bg flex-1 overflow-hidden">
+                <MarkdownPreview content={markdown} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile stats bar */}
+      <div className="border-border bg-toolbar-bg flex items-center justify-between border-t px-4 py-1.5 lg:hidden">
+        <div className="text-muted-foreground flex items-center gap-3 text-[10px]">
+          <span>{stats.words} words</span>
+          <span>{stats.chars} chars</span>
+          <span>{stats.lines} lines</span>
+        </div>
+        <span className="text-muted-foreground text-[10px] capitalize">{platform}</span>
+      </div>
+    </div>
+  )
+}
