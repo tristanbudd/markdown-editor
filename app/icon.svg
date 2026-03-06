@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" viewBox="0 0 200 200" width="200" height="200"><style>
+		.s0 { fill: #ffffff;stroke: #000000;stroke-width: .4 } 
+		.s1 { fill: #000000;stroke: #000000;stroke-width: .4 } 
+	</style><path id="Shape 1" fill-rule="evenodd" class="s0" d="m191 53v93h-180v-93z"></path><path class="s1" d="m185.56 38.47h-171.12c-7.97 0-14.44 6.47-14.44 14.41v94.21c0 7.97 6.47 14.44 14.44 14.44h171.15c7.97 0 14.44-6.47 14.41-14.4v-94.25c0-7.94-6.47-14.41-14.44-14.41zm-79.78 94.22h-19.22v-37.5l-19.22 24.03-19.22-24.03v37.5h-19.28v-65.38h19.22l19.22 24.03 19.22-24.03h19.22v65.38zm42.28 0.97l-28.84-33.66h19.21v-32.69h19.22v32.69h19.22z"></path><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
+@media (prefers-color-scheme: dark) { :root { filter: invert(100%); } }
+</style></svg>
