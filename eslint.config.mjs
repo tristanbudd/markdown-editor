@@ -58,7 +58,7 @@ const eslintConfig = defineConfig([
       "no-unused-expressions": "error",
     },
   },
-  // Prettier — applied to all files except this config file
+  // Prettier - applied to all files except this config file
   {
     files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
     ignores: ["eslint.config.mjs"],

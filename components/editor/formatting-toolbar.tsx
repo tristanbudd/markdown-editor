@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import {
   Bold,
   CheckSquare,
@@ -29,6 +30,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
@@ -86,7 +89,7 @@ function ToolbarDropdown({ icon, label, items }: ToolbarGroup) {
           {label}
         </TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="start" className="min-w-[140px]">
+      <DropdownMenuContent align="start" className="min-w-35">
         {items.map((item) => (
           // TODO: Add onClick handler to insert markdown syntax
           <DropdownMenuItem key={item.label} className="gap-2">
@@ -96,6 +99,58 @@ function ToolbarDropdown({ icon, label, items }: ToolbarGroup) {
               <span className="text-muted-foreground ml-auto text-xs">{item.shortcut}</span>
             )}
           </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+interface GroupedSection {
+  label: string
+  items: ToolbarButtonConfig[]
+}
+
+function MegaDropdown({
+  icon,
+  label,
+  sections,
+}: {
+  icon: React.ReactNode
+  label: string
+  sections: GroupedSection[]
+}) {
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-7 shrink-0 gap-0.5 px-1.5" size="sm" variant="ghost">
+              {icon}
+              <ChevronDown className="h-3 w-3" />
+              <span className="sr-only">{label}</span>
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent className="text-xs" side="bottom">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="start" className="min-w-40">
+        {sections.map((section, i) => (
+          <React.Fragment key={section.label}>
+            {i > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="py-1 text-xs">{section.label}</DropdownMenuLabel>
+            {section.items.map((item) => (
+              // TODO: Add onClick handler to insert markdown syntax
+              <DropdownMenuItem key={item.label} className="gap-2">
+                {item.icon}
+                <span>{item.label}</span>
+                {item.shortcut && (
+                  <span className="text-muted-foreground ml-auto text-xs">{item.shortcut}</span>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </React.Fragment>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -140,8 +195,27 @@ export function FormattingToolbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      {/* Compact view - dropdowns (below lg) */}
-      <div className="flex shrink-0 items-center gap-0.5 lg:hidden">
+      {/* XS view - single mega-dropdown (below sm) */}
+      <div className="flex shrink-0 items-center gap-0.5 sm:hidden">
+        {historyButtons.map((btn) => (
+          <ToolbarButton key={btn.label} {...btn} />
+        ))}
+        <Separator className="mx-1 h-5" orientation="vertical" />
+        <MegaDropdown
+          icon={<LayoutGrid className="h-3.5 w-3.5" />}
+          label="Format"
+          sections={[
+            { label: "Headings", items: headingItems },
+            { label: "Text", items: textItems },
+            { label: "Links & Media", items: linkItems },
+            { label: "Lists", items: listItems },
+            { label: "Blocks", items: blockItems },
+          ]}
+        />
+      </div>
+
+      {/* Compact view - dropdowns (sm to lg) */}
+      <div className="hidden shrink-0 items-center gap-0.5 sm:flex lg:hidden">
         {historyButtons.map((btn) => (
           <ToolbarButton key={btn.label} {...btn} />
         ))}
