@@ -4,12 +4,15 @@ import { GITLAB_COMPONENTS } from "./gitlab"
 import { SHARED_COMPONENTS } from "./shared"
 import { STANDARD_COMPONENTS } from "./standard"
 
+export { HEADING_STYLES, PARAGRAPH_STYLE, type HeadingLevel } from "./styles"
+
 export interface InsertableComponent {
   id: string
   label: string
   description: string
   icon: string
   template: string
+  show?: boolean // defaults to true, set to false to hide from component panel
 }
 
 export type PlatformStyleType = "shared" | "standard" | "github" | "gitlab" | "bitbucket"

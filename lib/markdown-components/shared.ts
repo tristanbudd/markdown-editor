@@ -2,6 +2,14 @@ import type { InsertableComponent } from "./index"
 
 export const SHARED_COMPONENTS: InsertableComponent[] = [
   {
+    id: "paragraph",
+    label: "Paragraph",
+    description: "Regular paragraph text",
+    icon: "text",
+    template: "",
+    show: false,
+  },
+  {
     id: "heading-1",
     label: "Heading 1",
     description: "Large section heading",
@@ -21,5 +29,26 @@ export const SHARED_COMPONENTS: InsertableComponent[] = [
     description: "Small section heading",
     icon: "heading-3",
     template: "### Heading 3\n",
+  },
+  {
+    id: "heading-4",
+    label: "Heading 4",
+    description: "Subsection heading",
+    icon: "heading-4",
+    template: "#### Heading 4\n",
+  },
+  {
+    id: "heading-5",
+    label: "Heading 5",
+    description: "Minor heading",
+    icon: "heading-5",
+    template: "##### Heading 5\n",
+  },
+  {
+    id: "heading-6",
+    label: "Heading 6",
+    description: "Smallest heading",
+    icon: "heading-6",
+    template: "###### Heading 6\n",
   },
 ]
