@@ -44,7 +44,7 @@ export function MarkdownEditor() {
         onViewModeChange={setViewMode}
       />
 
-      <div className="border-border bg-toolbar-bg toolbar-scroll flex items-center gap-2 overflow-x-auto border-b px-2 py-1">
+      <div className="border-border bg-toolbar-bg toolbar-scroll flex items-center gap-2 border-b px-2 py-1">
         <div className="shrink-0">
           <PlatformSelector platform={platform} onPlatformChange={setPlatform} />
         </div>
