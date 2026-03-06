@@ -24,22 +24,21 @@ const PLATFORMS: Platform[] = [
     name: "Standard",
     description: "CommonMark standard",
   },
-  // TODO: Uncomment when platform-specific rendering is implemented
-  // {
-  //   id: "github",
-  //   name: "GitHub",
-  //   description: "GitHub Markdown Style",
-  // },
-  // {
-  //   id: "gitlab",
-  //   name: "GitLab",
-  //   description: "GitLab Markdown Style",
-  // },
-  // {
-  //   id: "bitbucket",
-  //   name: "Bitbucket",
-  //   description: "Bitbucket Markdown",
-  // },
+  {
+    id: "github",
+    name: "GitHub",
+    description: "GitHub Markdown Style",
+  },
+  {
+    id: "gitlab",
+    name: "GitLab",
+    description: "GitLab Markdown Style",
+  },
+  {
+    id: "bitbucket",
+    name: "Bitbucket",
+    description: "Bitbucket Markdown",
+  },
 ]
 
 interface PlatformSelectorProps {

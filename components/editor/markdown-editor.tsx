@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Blocks } from "lucide-react"
 
+import type { PlatformStyleType } from "@/lib/markdown-components"
 import { Button } from "@/components/ui/button"
 
 import { ComponentPanel } from "./component-panel"
@@ -17,6 +18,7 @@ export function MarkdownEditor() {
   const [markdown, setMarkdown] = useState("")
   const [platform, setPlatform] = useState<PlatformType>("standard")
   const [viewMode, setViewMode] = useState<ViewMode>("split")
+  const [activeCategory, setActiveCategory] = useState<PlatformStyleType | "all">("all")
   const [componentPanelOpen, setComponentPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -73,7 +75,20 @@ export function MarkdownEditor() {
 
       <div className="border-border bg-toolbar-bg toolbar-scroll flex items-center gap-2 border-b px-2 py-1">
         <div className="shrink-0">
-          <PlatformSelector platform={platform} onPlatformChange={setPlatform} />
+          <PlatformSelector
+            platform={platform}
+            onPlatformChange={(newPlatform) => {
+              setPlatform(newPlatform)
+
+              if (
+                activeCategory !== "all" &&
+                activeCategory !== "standard" &&
+                activeCategory !== newPlatform
+              ) {
+                setActiveCategory("all")
+              }
+            }}
+          />
         </div>
         <div className="bg-border h-5 w-px shrink-0" />
         <FormattingToolbar />
@@ -136,8 +151,10 @@ export function MarkdownEditor() {
 
         {/* Component Panel - overlays on small screens, sidebar on large */}
         <ComponentPanel
+          activeCategory={activeCategory}
           isOpen={componentPanelOpen}
           platform={platform}
+          onCategoryChange={setActiveCategory}
           onClose={() => setComponentPanelOpen(false)}
           onInsert={handleInsertComponent}
         />

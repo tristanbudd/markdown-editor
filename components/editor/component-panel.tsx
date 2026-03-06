@@ -46,14 +46,22 @@ const categoryConfig: Record<PlatformStyleType, { label: string }> = {
 
 interface ComponentPanelProps {
   platform: PlatformType
+  activeCategory: PlatformStyleType | "all"
+  onCategoryChange: (category: PlatformStyleType | "all") => void
   onInsert: (template: string) => void
   isOpen: boolean
   onClose: () => void
 }
 
-export function ComponentPanel({ platform, onInsert, isOpen, onClose }: ComponentPanelProps) {
+export function ComponentPanel({
+  platform,
+  activeCategory,
+  onCategoryChange,
+  onInsert,
+  isOpen,
+  onClose,
+}: ComponentPanelProps) {
   const [search, setSearch] = useState("")
-  const [activeCategory, setActiveCategory] = useState<PlatformStyleType | "all">("all")
 
   const allComponents = getComponentsForPlatform(platform).filter((c) => c.show !== false)
 
@@ -110,7 +118,7 @@ export function ComponentPanel({ platform, onInsert, isOpen, onClose }: Componen
           className="h-6 px-2 text-[10px]"
           size="sm"
           variant={activeCategory === "all" ? "secondary" : "ghost"}
-          onClick={() => setActiveCategory("all")}
+          onClick={() => onCategoryChange("all")}
         >
           All
         </Button>
@@ -118,7 +126,7 @@ export function ComponentPanel({ platform, onInsert, isOpen, onClose }: Componen
           className="h-6 px-2 text-[10px]"
           size="sm"
           variant={activeCategory === "standard" ? "secondary" : "ghost"}
-          onClick={() => setActiveCategory("standard")}
+          onClick={() => onCategoryChange("standard")}
         >
           Standard
         </Button>
@@ -131,7 +139,7 @@ export function ComponentPanel({ platform, onInsert, isOpen, onClose }: Componen
               disabled={!isCurrentPlatform}
               size="sm"
               variant={activeCategory === cat ? "secondary" : "ghost"}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => onCategoryChange(cat)}
             >
               {categoryConfig[cat]?.label || cat}
             </Button>
