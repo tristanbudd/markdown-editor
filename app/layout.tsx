@@ -18,9 +18,33 @@ const jetBrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://md.tristanbudd.com"),
   title: "Markdown Editor",
   description:
     "Markdown Editor | Edit .MD Files With Live Preview | GitHub, GitLab & BitBucket Support | Export (HTML, PDF, Text) | Open Source",
+  openGraph: {
+    type: "website",
+    siteName: "Markdown Editor",
+    title: "Markdown Editor",
+    description:
+      "Edit .MD Files With Live Preview | GitHub, GitLab & BitBucket Support | Export (HTML, PDF, Text) | Open Source",
+    url: "https://md.tristanbudd.com",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "Markdown Editor",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Markdown Editor",
+    description:
+      "Edit .MD Files With Live Preview | GitHub, GitLab & BitBucket Support | Export (HTML, PDF, Text) | Open Source",
+    images: ["/api/og"],
+  },
   icons: {
     icon: [
       {
