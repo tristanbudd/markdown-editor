@@ -89,7 +89,7 @@ export function MarkdownEditor() {
         </Button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         <div className="flex flex-1 overflow-hidden">
           {/* Editor */}
           {(viewMode === "split" || viewMode === "editor") && (
@@ -134,7 +134,7 @@ export function MarkdownEditor() {
           )}
         </div>
 
-        {/* Component Panel */}
+        {/* Component Panel - overlays on small screens, sidebar on large */}
         <ComponentPanel
           isOpen={componentPanelOpen}
           platform={platform}
