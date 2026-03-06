@@ -7,8 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator"
 
 // TODO: Add GitHub, GitLab, and Bitbucket markdown styles
-// - GitHub: GFM (GitHub Flavored Markdown) with task lists, tables, autolinks
-// - GitLab: GitLab Flavored Markdown with diagrams, math, footnotes
+// - GitHub: GFM (GitHub Markdown Style) with task lists, tables, autolinks
+// - GitLab: GitLab Markdown Style with diagrams, math, footnotes
 // - Bitbucket: Bitbucket markdown with specific syntax highlighting
 export type PlatformType = "standard" | "github" | "gitlab" | "bitbucket"
 
@@ -28,12 +28,12 @@ const PLATFORMS: Platform[] = [
   // {
   //   id: "github",
   //   name: "GitHub",
-  //   description: "GitHub Flavored Markdown",
+  //   description: "GitHub Markdown Style",
   // },
   // {
   //   id: "gitlab",
   //   name: "GitLab",
-  //   description: "GitLab Flavored Markdown",
+  //   description: "GitLab Markdown Style",
   // },
   // {
   //   id: "bitbucket",

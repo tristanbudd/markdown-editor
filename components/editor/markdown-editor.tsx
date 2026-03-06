@@ -1,7 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Blocks } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
+
+import { ComponentPanel } from "./component-panel"
 import { EditorHeader } from "./editor-header"
 import { FormattingToolbar } from "./formatting-toolbar"
 import { MarkdownPreview } from "./markdown-preview"
@@ -13,6 +17,7 @@ export function MarkdownEditor() {
   const [markdown, setMarkdown] = useState("")
   const [platform, setPlatform] = useState<PlatformType>("standard")
   const [viewMode, setViewMode] = useState<ViewMode>("split")
+  const [componentPanelOpen, setComponentPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const stats = useMemo(() => {
@@ -21,6 +26,28 @@ export function MarkdownEditor() {
     const lines = markdown.length === 0 ? 0 : markdown.split("\n").length
     return { words, chars, lines }
   }, [markdown])
+
+  const handleInsertComponent = useCallback(
+    (template: string) => {
+      const textarea = textareaRef.current
+      if (!textarea) return
+
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const before = markdown.slice(0, start)
+      const after = markdown.slice(end)
+
+      setMarkdown(before + template + after)
+
+      // Set cursor position after inserted text
+      requestAnimationFrame(() => {
+        textarea.focus()
+        const newPosition = start + template.length
+        textarea.setSelectionRange(newPosition, newPosition)
+      })
+    },
+    [markdown]
+  )
 
   useEffect(() => {
     const handleResize = () => {
@@ -50,6 +77,16 @@ export function MarkdownEditor() {
         </div>
         <div className="bg-border h-5 w-px shrink-0" />
         <FormattingToolbar />
+        <div className="flex-1" />
+        <Button
+          className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+          size="sm"
+          variant={componentPanelOpen ? "secondary" : "ghost"}
+          onClick={() => setComponentPanelOpen(!componentPanelOpen)}
+        >
+          <Blocks className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Components</span>
+        </Button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -96,6 +133,14 @@ export function MarkdownEditor() {
             </div>
           )}
         </div>
+
+        {/* Component Panel */}
+        <ComponentPanel
+          isOpen={componentPanelOpen}
+          platform={platform}
+          onClose={() => setComponentPanelOpen(false)}
+          onInsert={handleInsertComponent}
+        />
       </div>
 
       {/* Mobile stats bar */}

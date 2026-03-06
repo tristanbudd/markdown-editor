@@ -2,7 +2,7 @@
 
 // TODO: Implement markdown rendering
 // - Use react-markdown or similar library for parsing
-// - Support GitHub Flavored Markdown (GFM) syntax
+// - Support GitHub Markdown Style (GFM) syntax
 // - Add syntax highlighting for code blocks (e.g., react-syntax-highlighter)
 // - Support platform-specific styles (GitHub, GitLab, Bitbucket)
 // - Add copy button for code blocks
