@@ -38,7 +38,6 @@ const iconMap: Record<string, React.ReactNode> = {
 }
 
 const categoryConfig: Record<PlatformStyleType, { label: string }> = {
-  shared: { label: "Shared" },
   standard: { label: "Standard" },
   github: { label: "GitHub" },
   gitlab: { label: "GitLab" },
@@ -67,18 +66,18 @@ export function ComponentPanel({ platform, onInsert, isOpen, onClose }: Componen
     if (activeCategory === "all") return matchesSearch
 
     // Check which category this component belongs to
-    const isShared = PLATFORM_COMPONENTS.shared.some((c) => c.id === comp.id)
+    const isStandard = PLATFORM_COMPONENTS.standard.some((c) => c.id === comp.id)
     const isPlatformSpecific = PLATFORM_COMPONENTS[platform as PlatformStyleType]?.some(
       (c) => c.id === comp.id
     )
 
-    if (activeCategory === "shared") return matchesSearch && isShared
+    if (activeCategory === "standard") return matchesSearch && isStandard
     if (activeCategory === platform) return matchesSearch && isPlatformSpecific
 
     return false
   })
 
-  const platformCategories: PlatformStyleType[] = ["standard", "github", "gitlab", "bitbucket"]
+  const platformCategories: PlatformStyleType[] = ["github", "gitlab", "bitbucket"]
 
   if (!isOpen) return null
 
@@ -118,10 +117,10 @@ export function ComponentPanel({ platform, onInsert, isOpen, onClose }: Componen
         <Button
           className="h-6 px-2 text-[10px]"
           size="sm"
-          variant={activeCategory === "shared" ? "secondary" : "ghost"}
-          onClick={() => setActiveCategory("shared")}
+          variant={activeCategory === "standard" ? "secondary" : "ghost"}
+          onClick={() => setActiveCategory("standard")}
         >
-          Shared
+          Standard
         </Button>
         {platformCategories.map((cat) => {
           const isCurrentPlatform = cat === platform
@@ -144,9 +143,9 @@ export function ComponentPanel({ platform, onInsert, isOpen, onClose }: Componen
         <div className="grid grid-cols-1 gap-1 p-2">
           <TooltipProvider delayDuration={200}>
             {filteredComponents.map((comp: InsertableComponent) => {
-              const isShared = PLATFORM_COMPONENTS.shared.some((c) => c.id === comp.id)
-              const categoryLabel = isShared
-                ? "Shared"
+              const isStandard = PLATFORM_COMPONENTS.standard.some((c) => c.id === comp.id)
+              const categoryLabel = isStandard
+                ? "Standard"
                 : categoryConfig[platform as PlatformStyleType]?.label
 
               return (
