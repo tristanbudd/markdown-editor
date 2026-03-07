@@ -188,7 +188,7 @@ export function ComponentPanel({
                     <p className="font-medium">{comp.label}</p>
                     <p className="text-muted-foreground mt-0.5">{comp.description}</p>
                     <p className="text-muted-foreground mt-1 font-mono text-[10px]">
-                      Click to insert
+                      (Click to insert)
                     </p>
                   </TooltipContent>
                 </Tooltip>

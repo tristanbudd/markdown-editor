@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Blocks } from "lucide-react"
 
+import { DEFAULT_MARKDOWN } from "@/lib/default-markdown"
 import type { PlatformStyleType } from "@/lib/markdown-components"
+import { useEditorHistory } from "@/hooks/use-editor-history"
 import { Button } from "@/components/ui/button"
 
 import { ComponentPanel } from "./component-panel"
@@ -15,7 +17,14 @@ import { PlatformSelector, type PlatformType } from "./platform-selector"
 type ViewMode = "split" | "editor" | "preview"
 
 export function MarkdownEditor() {
-  const [markdown, setMarkdown] = useState("")
+  const {
+    value: markdown,
+    set: setMarkdown,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useEditorHistory(DEFAULT_MARKDOWN)
   const [platform, setPlatform] = useState<PlatformType>("standard")
   const [viewMode, setViewMode] = useState<ViewMode>("split")
   const [activeCategory, setActiveCategory] = useState<PlatformStyleType | "all">("all")
@@ -32,7 +41,10 @@ export function MarkdownEditor() {
   const handleInsertComponent = useCallback(
     (template: string) => {
       const textarea = textareaRef.current
-      if (!textarea) return
+      if (!textarea) {
+        setMarkdown(markdown + template, true)
+        return
+      }
 
       const start = textarea.selectionStart
       const end = textarea.selectionEnd
@@ -48,7 +60,7 @@ export function MarkdownEditor() {
         textarea.setSelectionRange(newPosition, newPosition)
       })
     },
-    [markdown]
+    [markdown, setMarkdown]
   )
 
   useEffect(() => {
@@ -91,7 +103,7 @@ export function MarkdownEditor() {
           />
         </div>
         <div className="bg-border h-5 w-px shrink-0" />
-        <FormattingToolbar />
+        <FormattingToolbar canRedo={canRedo} canUndo={canUndo} onRedo={redo} onUndo={undo} />
         <div className="flex-1" />
         <Button
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
@@ -125,7 +137,7 @@ export function MarkdownEditor() {
                   placeholder="Start writing markdown..."
                   spellCheck={false}
                   value={markdown}
-                  onChange={(e) => setMarkdown(e.target.value)}
+                  onChange={(e) => setMarkdown(e.target.value, true)}
                 />
               </div>
             </div>
