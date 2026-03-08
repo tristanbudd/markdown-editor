@@ -30,6 +30,7 @@ export function MarkdownEditor() {
   const [activeCategory, setActiveCategory] = useState<PlatformStyleType | "all">("all")
   const [componentPanelOpen, setComponentPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
 
   const stats = useMemo(() => {
     const words = markdown.trim().split(/\s+/).filter(Boolean).length
@@ -228,7 +229,7 @@ export function MarkdownEditor() {
                 </span>
               </div>
               <div className="bg-preview-bg flex-1 overflow-hidden">
-                <MarkdownPreview content={markdown} />
+                <MarkdownPreview ref={previewRef} content={markdown} platform={platform} />
               </div>
             </div>
           )}

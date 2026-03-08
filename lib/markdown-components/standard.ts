@@ -52,6 +52,14 @@ export const STANDARD_COMPONENTS: InsertableComponent[] = [
     template: "###### Heading 6\n",
   },
   {
+    id: "heading-setext",
+    label: "Setext Heading",
+    description: "Setext style heading",
+    icon: "heading",
+    template: "Heading\n==========\n",
+    show: false,
+  },
+  {
     id: "bold",
     label: "Bold",
     icon: "bold",
@@ -120,5 +128,12 @@ export const STANDARD_COMPONENTS: InsertableComponent[] = [
     icon: "minus",
     template: "\n---\n",
     description: "Horizontal rule",
+  },
+  {
+    id: "code-block",
+    label: "Code Block",
+    icon: "file-code",
+    template: '```javascript\n// Your code here\nconsole.log("Hello!");\n```\n',
+    description: "Fenced code block",
   },
 ]

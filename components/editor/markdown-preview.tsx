@@ -1,15 +1,48 @@
 "use client"
 
+import { useMemo } from "react"
 import ReactMarkdown from "react-markdown"
+import rehypeHighlight from "rehype-highlight"
+import rehypeKatex from "rehype-katex"
+import rehypeRaw from "rehype-raw"
+import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+import type { PlatformType } from "./platform-selector"
+
 interface MarkdownPreviewProps {
   content: string
+  platform: PlatformType
 }
 
-export function MarkdownPreview({ content }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, platform }: MarkdownPreviewProps) {
+  const remarkPlugins = useMemo(() => {
+    const plugins: Array<typeof remarkGfm | typeof remarkMath> = []
+    plugins.push(remarkGfm)
+    if (platform === "github" || platform === "gitlab") {
+      plugins.push(remarkMath)
+    }
+    return plugins
+  }, [platform])
+
+  const rehypePlugins = useMemo(() => {
+    const plugins: Array<
+      typeof rehypeKatex | typeof rehypeHighlight | typeof rehypeRaw | typeof rehypeSlug
+    > = []
+    plugins.push(rehypeRaw)
+    plugins.push(rehypeSlug)
+    if (platform === "github" || platform === "gitlab" || platform === "bitbucket") {
+      plugins.push(rehypeHighlight)
+    }
+    if (platform === "github" || platform === "gitlab") {
+      plugins.push(rehypeKatex)
+    }
+    return plugins
+  }, [platform])
+
   return (
     <ScrollArea className="h-full">
       <div className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">
@@ -78,19 +111,23 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
                 {children}
               </del>
             ),
-            code: ({ children, className, ...props }) => {
+            code: ({ className, children, ...props }) => {
               const isInline = !className
               if (isInline) {
                 return (
                   <code
+                    className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
                     {...props}
-                    className="bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
                   >
                     {children}
                   </code>
                 )
               }
-              return null
+              return (
+                <code className={`${className} font-mono text-sm`} {...props}>
+                  {children}
+                </code>
+              )
             },
             a: ({ ...props }) => (
               <a
@@ -133,8 +170,24 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
               />
             ),
             hr: () => <hr className="md-hover-label border-border my-8" />,
+            pre: ({ ...props }) => (
+              <pre
+                {...props}
+                className="md-hover-label border-border bg-muted/50 overflow-x-auto rounded-lg border p-4 text-sm"
+              />
+            ),
+            summary: ({ ...props }) => (
+              <summary
+                {...props}
+                className="bg-muted/30 text-foreground hover:bg-muted/50 cursor-pointer px-4 py-2.5 font-medium transition-colors select-none"
+              />
+            ),
+            sup: ({ ...props }) => (
+              <sup {...props} className="md-hover-label-inline text-primary text-xs" />
+            ),
           }}
-          remarkPlugins={[remarkGfm]}
+          rehypePlugins={rehypePlugins}
+          remarkPlugins={remarkPlugins}
         >
           {content}
         </ReactMarkdown>
