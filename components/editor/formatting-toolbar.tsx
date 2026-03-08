@@ -239,15 +239,19 @@ export function FormattingToolbar({
   ]
 
   const listItems: ToolbarButtonConfig[] = [
-    { icon: <List className="h-4 w-4" />, label: "Bullet List", action: () => {} },
-    { icon: <ListOrdered className="h-4 w-4" />, label: "Numbered List", action: () => {} },
+    { icon: <List className="h-4 w-4" />, label: "Bullet List", action: () => onInsert("- ") },
+    {
+      icon: <ListOrdered className="h-4 w-4" />,
+      label: "Numbered List",
+      action: () => onInsert("1. "),
+    },
     { icon: <CheckSquare className="h-4 w-4" />, label: "Task List", action: () => {} },
   ]
 
   const blockItems: ToolbarButtonConfig[] = [
-    { icon: <Quote className="h-4 w-4" />, label: "Blockquote", action: () => {} },
+    { icon: <Quote className="h-4 w-4" />, label: "Blockquote", action: () => onInsert("> ") },
     { icon: <Table className="h-4 w-4" />, label: "Table", action: () => {} },
-    { icon: <Minus className="h-4 w-4" />, label: "Divider", action: () => {} },
+    { icon: <Minus className="h-4 w-4" />, label: "Divider", action: () => onInsert("---") },
   ]
 
   return (

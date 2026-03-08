@@ -93,4 +93,32 @@ export const STANDARD_COMPONENTS: InsertableComponent[] = [
     template: "![alt text](https://picsum.photos/600/400)\n",
     description: "Embedded image",
   },
+  {
+    id: "unordered-list",
+    label: "Bullet List",
+    icon: "list",
+    template: "- Item 1\n- Item 2\n- Item 3\n",
+    description: "Unordered list",
+  },
+  {
+    id: "ordered-list",
+    label: "Numbered List",
+    icon: "list-ordered",
+    template: "1. First item\n2. Second item\n3. Third item\n",
+    description: "Ordered list",
+  },
+  {
+    id: "blockquote",
+    label: "Blockquote",
+    icon: "quote",
+    template: "> Blockquote text\n",
+    description: "Quoted text",
+  },
+  {
+    id: "horizontal-rule",
+    label: "Divider",
+    icon: "minus",
+    template: "\n---\n",
+    description: "Horizontal rule",
+  },
 ]

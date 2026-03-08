@@ -23,4 +23,24 @@ export const DEFAULT_MARKDOWN = `# Welcome to the Markdown Editor!
 [Example Link](https://www.example.com)
 
 ![Example Image](https://picsum.photos/600/400)
+
+## Lists
+
+- Unordered List Item 1
+- Unordered List Item 2
+- Unordered List Item 3
+
+1. Ordered List Item 1
+2. Ordered List Item 2
+3. Ordered List Item 3
+
+## Blockquote
+
+> This is a blockquote. It is used to highlight important information or quotes.
+
+## Horizontal Rule
+
+---
+
+Feel free to edit this markdown and see the live preview on the right!
 `

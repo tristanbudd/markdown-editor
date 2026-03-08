@@ -109,6 +109,30 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
                 loading="lazy"
               />
             ),
+            ul: ({ className, ...props }) => {
+              const isTaskList = className?.includes("contains-task-list")
+              return (
+                <ul
+                  {...props}
+                  className={`md-hover-label my-2 ml-4 ${
+                    isTaskList ? "ml-0 list-none pl-0" : "list-disc"
+                  } space-y-1`}
+                />
+              )
+            },
+            ol: ({ ...props }) => (
+              <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
+            ),
+            li: ({ ...props }) => (
+              <li {...props} className="text-muted-foreground leading-relaxed" />
+            ),
+            blockquote: ({ ...props }) => (
+              <blockquote
+                {...props}
+                className="md-hover-label border-primary/40 text-muted-foreground my-4 border-l-3 pl-4 italic"
+              />
+            ),
+            hr: () => <hr className="md-hover-label border-border my-8" />,
           }}
           remarkPlugins={[remarkGfm]}
         >

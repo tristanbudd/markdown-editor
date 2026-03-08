@@ -14,6 +14,10 @@ import {
   Image,
   Italic,
   Link,
+  List,
+  ListOrdered,
+  Minus,
+  Quote,
   Search,
   Strikethrough,
   X,
@@ -46,6 +50,10 @@ const iconMap: Record<string, React.ReactNode> = {
   "inline-code": <Code className="h-3.5 w-3.5" />,
   link: <Link className="h-3.5 w-3.5" />,
   image: <Image className="h-3.5 w-3.5" />,
+  list: <List className="h-3.5 w-3.5" />,
+  "list-ordered": <ListOrdered className="h-3.5 w-3.5" />,
+  quote: <Quote className="h-3.5 w-3.5" />,
+  horizontal_rule: <Minus className="h-3.5 w-3.5" />,
 }
 
 const categoryConfig: Record<PlatformStyleType, { label: string }> = {
