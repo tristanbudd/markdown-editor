@@ -38,6 +38,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface FormattingToolbarProps {
+  onInsert: (template: string) => void
   onUndo: () => void
   onRedo: () => void
   canUndo: boolean
@@ -177,16 +178,22 @@ function MegaDropdown({
   )
 }
 
-export function FormattingToolbar({ onUndo, onRedo, canUndo, canRedo }: FormattingToolbarProps) {
+export function FormattingToolbar({
+  onInsert,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+}: FormattingToolbarProps) {
   const historyButtons: ToolbarButtonConfig[] = [
     { icon: <Undo2 className="h-3.5 w-3.5" />, label: "Undo", shortcut: "Ctrl+Z", action: onUndo },
     { icon: <Redo2 className="h-3.5 w-3.5" />, label: "Redo", shortcut: "Ctrl+Y", action: onRedo },
   ]
 
   const headingItems: ToolbarButtonConfig[] = [
-    { icon: <Heading1 className="h-4 w-4" />, label: "Heading 1", action: () => {} },
-    { icon: <Heading2 className="h-4 w-4" />, label: "Heading 2", action: () => {} },
-    { icon: <Heading3 className="h-4 w-4" />, label: "Heading 3", action: () => {} },
+    { icon: <Heading1 className="h-4 w-4" />, label: "Heading 1", action: () => onInsert("# ") },
+    { icon: <Heading2 className="h-4 w-4" />, label: "Heading 2", action: () => onInsert("## ") },
+    { icon: <Heading3 className="h-4 w-4" />, label: "Heading 3", action: () => onInsert("### ") },
   ]
 
   const textItems: ToolbarButtonConfig[] = [

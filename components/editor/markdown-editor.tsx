@@ -103,7 +103,13 @@ export function MarkdownEditor() {
           />
         </div>
         <div className="bg-border h-5 w-px shrink-0" />
-        <FormattingToolbar canRedo={canRedo} canUndo={canUndo} onRedo={redo} onUndo={undo} />
+        <FormattingToolbar
+          canRedo={canRedo}
+          canUndo={canUndo}
+          onInsert={handleInsertComponent}
+          onRedo={redo}
+          onUndo={undo}
+        />
         <div className="flex-1" />
         <Button
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
