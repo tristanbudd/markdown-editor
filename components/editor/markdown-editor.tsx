@@ -129,6 +129,33 @@ export function MarkdownEditor() {
     [handleWrapSelection, handleInsertComponent, undo, redo]
   )
 
+  const handleImportFile = useCallback(
+    (content: string) => {
+      setMarkdown(content, true)
+    },
+    [setMarkdown]
+  )
+
+  const exportMarkdown = useCallback(() => {
+    const blob = new Blob([markdown], { type: "text/markdown" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "document.md"
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [markdown])
+
+  const exportRaw = useCallback(() => {
+    const blob = new Blob([markdown], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.target = "_blank"
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [markdown])
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768 && viewMode === "split") {
@@ -148,6 +175,9 @@ export function MarkdownEditor() {
         lineCount={stats.lines}
         viewMode={viewMode}
         wordCount={stats.words}
+        onExportMarkdown={exportMarkdown}
+        onExportRaw={exportRaw}
+        onImportFile={handleImportFile}
         onViewModeChange={setViewMode}
       />
 

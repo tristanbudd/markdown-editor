@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
+  ClipboardType,
   Columns2,
   Download,
   FileCode,
-  FileDown,
-  FileText,
   FileUp,
   Menu,
   Moon,
@@ -38,6 +37,21 @@ import {
 
 type ViewMode = "split" | "editor" | "preview"
 
+const ALLOWED_EXTENSIONS = [".md", ".txt"]
+
+const BLOCKED_MIME_PREFIXES = [
+  "image/",
+  "video/",
+  "audio/",
+  "application/zip",
+  "application/x-rar",
+  "application/gzip",
+  "application/pdf",
+  "application/octet-stream",
+  "application/x-executable",
+  "application/wasm",
+]
+
 interface EditorHeaderProps {
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
@@ -45,28 +59,113 @@ interface EditorHeaderProps {
   wordCount: number
   charCount: number
   lineCount: number
+  onExportMarkdown: () => void
+  onImportFile: (content: string) => void
+  onExportRaw: () => void
 }
 
 export function EditorHeader({
   viewMode,
-  onViewModeChange,
   hasContent,
   wordCount,
   charCount,
   lineCount,
+  onViewModeChange,
+  onExportRaw,
+  onExportMarkdown,
+  onImportFile,
 }: EditorHeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogMsg, setDialogMsg] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // TODO: Implement file import functionality
-  // - Accept .md, .txt, .markdown files
-  // - Read file contents and parse as markdown
-  // - Validate file size limits
-  // - Handle encoding issues (UTF-8)
-  function handleImportClick() {
-    if (hasContent) {
-      setConfirmOpen(true)
+  function showDialog(msg: string) {
+    setDialogMsg(msg)
+    setDialogOpen(true)
+  }
+
+  function handleImportClick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ""
+
+    // Check MIME type
+    if (file.type && BLOCKED_MIME_PREFIXES.some((prefix) => file.type.startsWith(prefix))) {
+      showDialog(`Cannot import "${file.name}". This file type (${file.type}) is not a text file.`)
+      return
     }
+
+    // Check extension
+    const ext = "." + file.name.split(".").pop()?.toLowerCase()
+    const hasKnownExt = ALLOWED_EXTENSIONS.includes(ext)
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showDialog("File is too large. Maximum size is 5MB.")
+      return
+    }
+
+    // If there is content, ask for confirmation
+    if (hasContent) {
+      setPendingFile(file)
+      setConfirmOpen(true)
+      return
+    }
+    importFile(file, hasKnownExt)
+  }
+
+  function importFile(file: File, hasKnownExt: boolean) {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result
+      if (typeof text !== "string") {
+        showDialog("Could not read file contents.")
+        return
+      }
+      const nullByteCount = (text.match(/\0/g) || []).length
+      if (nullByteCount > 0) {
+        showDialog(
+          `Cannot import "${file.name}". This appears to be a binary file, not a text file.`
+        )
+        return
+      }
+      const nonPrintable = text.replace(/[\x20-\x7E\t\n\r\u00A0-\uFFFF]/g, "")
+      if (text.length > 0 && nonPrintable.length / text.length > 0.1) {
+        showDialog(
+          `Cannot import "${file.name}". This file contains too many non-printable characters and doesn't appear to be text.`
+        )
+        return
+      }
+      if (!hasKnownExt && !file.type.startsWith("text/")) {
+        const proceed = confirm(
+          `"${file.name}" has an unrecognized extension. The content looks like text. Import anyway?`
+        )
+        if (!proceed) return
+      }
+      onImportFile(text)
+    }
+    reader.onerror = () => {
+      showDialog("Failed to read the file.")
+    }
+    reader.readAsText(file)
+  }
+
+  function handleDialogAction() {
+    if (pendingFile) {
+      const ext = "." + pendingFile.name.split(".").pop()?.toLowerCase()
+      const hasKnownExt = ALLOWED_EXTENSIONS.includes(ext)
+      importFile(pendingFile, hasKnownExt)
+    }
+    setPendingFile(null)
+    setConfirmOpen(false)
+  }
+
+  function handleDialogCancel() {
+    setPendingFile(null)
+    setConfirmOpen(false)
   }
 
   return (
@@ -150,12 +249,22 @@ export function EditorHeader({
             <span>{lineCount} lines</span>
           </div>
 
+          {/* File input - hidden, triggered by Import button */}
+          <input
+            ref={fileInputRef}
+            accept=".md,.txt"
+            aria-label="Import file"
+            className="hidden"
+            type="file"
+            onChange={handleImportClick}
+          />
+
           {/* Import/Export buttons - 420px and above */}
           <Button
             className="hidden h-8 gap-1.5 text-xs min-[420px]:flex"
             size="sm"
             variant="outline"
-            onClick={handleImportClick}
+            onClick={() => fileInputRef.current?.click()}
           >
             <FileUp className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Import</span>
@@ -173,22 +282,16 @@ export function EditorHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {/* TODO: Implement export to Markdown - download raw .md file */}
-              <DropdownMenuItem className="gap-2">
+              <DropdownMenuItem className="gap-2" onClick={onExportMarkdown}>
                 <FileCode className="h-4 w-4" />
                 Markdown (.md)
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {/* TODO: Implement export to HTML - convert markdown to HTML and download */}
-              <DropdownMenuItem className="gap-2">
-                <FileText className="h-4 w-4" />
-                HTML (.html)
+              <DropdownMenuItem className="gap-2" onClick={onExportRaw}>
+                <ClipboardType className="h-4 w-4" />
+                Export Raw
               </DropdownMenuItem>
-              {/* TODO: Implement export to PDF - convert to PDF and download */}
-              <DropdownMenuItem className="gap-2">
-                <FileDown className="h-4 w-4" />
-                PDF (.pdf)
-              </DropdownMenuItem>
+              {/*<DropdownMenuSeparator />*/}
+              {/* TODO: Add HTML & PDF Export Options */}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -200,26 +303,20 @@ export function EditorHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="gap-2" onClick={handleImportClick}>
+              <DropdownMenuItem className="gap-2" onClick={() => fileInputRef.current?.click()}>
                 <FileUp className="h-4 w-4" />
                 Import
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {/* TODO: Implement export to Markdown */}
-              <DropdownMenuItem className="gap-2">
+              <DropdownMenuItem className="gap-2" onClick={onExportMarkdown}>
                 <FileCode className="h-4 w-4" />
                 Export Markdown
               </DropdownMenuItem>
-              {/* TODO: Implement export to HTML */}
-              <DropdownMenuItem className="gap-2">
-                <FileText className="h-4 w-4" />
-                Export HTML
+              <DropdownMenuItem className="gap-2" onClick={onExportRaw}>
+                <ClipboardType className="h-4 w-4" />
+                Export Raw
               </DropdownMenuItem>
-              {/* TODO: Implement export to PDF */}
-              <DropdownMenuItem className="gap-2">
-                <FileDown className="h-4 w-4" />
-                Export PDF
-              </DropdownMenuItem>
+              {/* TODO: Add HTML & PDF Export Options */}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -248,9 +345,21 @@ export function EditorHeader({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            {/* TODO: Implement continue action - trigger file picker and replace content */}
-            <AlertDialogAction>Continue</AlertDialogAction>
+            <AlertDialogCancel onClick={handleDialogCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDialogAction}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Error AlertDialog for import failures */}
+      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Import Failed</AlertDialogTitle>
+            <AlertDialogDescription>{dialogMsg}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setDialogOpen(false)}>Close</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

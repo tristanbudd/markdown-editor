@@ -123,8 +123,15 @@ export function ComponentPanel({
           <Blocks className="text-primary h-4 w-4" />
           <span className="text-foreground text-sm font-medium">Components</span>
         </div>
-        <Button className="h-6 w-6" size="icon" variant="ghost" onClick={onClose}>
+        <Button
+          aria-label="Close panel"
+          className="h-6 w-6"
+          size="icon"
+          variant="ghost"
+          onClick={onClose}
+        >
           <X className="h-3.5 w-3.5" />
+          <span className="sr-only">Close</span>
         </Button>
       </div>
 
