@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import {
+  Ampersand,
   Blocks,
   Bold,
   Code,
@@ -19,7 +20,9 @@ import {
   Minus,
   Quote,
   Search,
+  Slash,
   Strikethrough,
+  Terminal,
   X,
 } from "lucide-react"
 
@@ -55,6 +58,10 @@ const iconMap: Record<string, React.ReactNode> = {
   "list-ordered": <ListOrdered className="h-3.5 w-3.5" />,
   quote: <Quote className="h-3.5 w-3.5" />,
   horizontal_rule: <Minus className="h-3.5 w-3.5" />,
+  ampersand: <Ampersand className="h-3.5 w-3.5" />,
+  slash: <Slash className="h-3.5 w-3.5" />,
+  terminal: <Terminal className="h-3.5 w-3.5" />,
+  minus: <Minus className="h-3.5 w-3.5" />,
 }
 
 const categoryConfig: Record<PlatformStyleType, { label: string }> = {
