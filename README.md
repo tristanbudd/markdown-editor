@@ -1,3 +1,7 @@
+<div align="center">
+  <img width="820" height="312" alt="Markdown Editor" src="https://github.com/user-attachments/assets/72c5a276-f580-4bf5-a449-cf4178d6c089" />
+</div>
+
 # Markdown Editor
 
 ![](https://img.shields.io/github/stars/tristanbudd/markdown-editor.svg)
@@ -33,9 +37,11 @@ This repository is a Next.js + TypeScript application with Prettier, ESLint, and
 
 ## Preview
 
-Preview images (Yet to be completed):
+Light Mode Preview:
+<img width="1920" height="945" alt="Markdown Editor Preview (Light Mode)" src="https://github.com/user-attachments/assets/5d9d8d57-4612-4479-b965-e21de695c6a7" />
 
-(TODO: Add Preview Images)
+Dark Mode Preview:
+<img width="1918" height="941" alt="Markdown Editor Preview (Dark Mode)" src="https://github.com/user-attachments/assets/82542c46-75d9-4dd8-96b7-30bb3bebe1c2" />
 
 ## Documentation
 
