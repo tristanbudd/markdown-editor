@@ -37,10 +37,21 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+interface FormattingToolbarProps {
+  onInsert: (template: string) => void
+  onWrap: (before: string, after: string) => void
+  onUndo: () => void
+  onRedo: () => void
+  canUndo: boolean
+  canRedo: boolean
+}
+
 interface ToolbarButtonConfig {
   icon: React.ReactNode
   label: string
   shortcut?: string
+  action: () => void
+  disabled?: boolean
 }
 
 interface ToolbarGroup {
@@ -54,12 +65,23 @@ interface ToolbarGroup {
 // - Handle text selection (wrap selected text with formatting)
 // - Support keyboard shortcuts (Ctrl+B for bold, etc.)
 // - Connect Undo/Redo to editor history state
-function ToolbarButton({ icon, label, shortcut }: ToolbarButtonConfig) {
-  // TODO: Add onClick handler that inserts markdown syntax based on label
+function ToolbarButton({
+  icon,
+  label,
+  shortcut,
+  action,
+  disabled,
+}: ToolbarButtonConfig & { disabled?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button className="h-7 w-7 shrink-0" size="icon" variant="ghost">
+        <Button
+          className="h-7 w-7 shrink-0"
+          disabled={disabled}
+          size="icon"
+          variant="ghost"
+          onClick={action}
+        >
           {icon}
           <span className="sr-only">{label}</span>
         </Button>
@@ -157,40 +179,92 @@ function MegaDropdown({
   )
 }
 
-export function FormattingToolbar() {
+export function FormattingToolbar({
+  onWrap,
+  onInsert,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+}: FormattingToolbarProps) {
   const historyButtons: ToolbarButtonConfig[] = [
-    { icon: <Undo2 className="h-3.5 w-3.5" />, label: "Undo", shortcut: "Ctrl+Z" },
-    { icon: <Redo2 className="h-3.5 w-3.5" />, label: "Redo", shortcut: "Ctrl+Y" },
+    { icon: <Undo2 className="h-3.5 w-3.5" />, label: "Undo", shortcut: "Ctrl+Z", action: onUndo },
+    { icon: <Redo2 className="h-3.5 w-3.5" />, label: "Redo", shortcut: "Ctrl+Y", action: onRedo },
   ]
 
   const headingItems: ToolbarButtonConfig[] = [
-    { icon: <Heading1 className="h-4 w-4" />, label: "Heading 1" },
-    { icon: <Heading2 className="h-4 w-4" />, label: "Heading 2" },
-    { icon: <Heading3 className="h-4 w-4" />, label: "Heading 3" },
+    { icon: <Heading1 className="h-4 w-4" />, label: "Heading 1", action: () => onInsert("# ") },
+    { icon: <Heading2 className="h-4 w-4" />, label: "Heading 2", action: () => onInsert("## ") },
+    { icon: <Heading3 className="h-4 w-4" />, label: "Heading 3", action: () => onInsert("### ") },
   ]
 
   const textItems: ToolbarButtonConfig[] = [
-    { icon: <Bold className="h-4 w-4" />, label: "Bold", shortcut: "Ctrl+B" },
-    { icon: <Italic className="h-4 w-4" />, label: "Italic", shortcut: "Ctrl+I" },
-    { icon: <Strikethrough className="h-4 w-4" />, label: "Strikethrough" },
-    { icon: <Code className="h-4 w-4" />, label: "Code", shortcut: "Ctrl+`" },
+    {
+      icon: <Bold className="h-4 w-4" />,
+      label: "Bold",
+      shortcut: "Ctrl+B",
+      action: () => onWrap("**", "**"),
+    },
+    {
+      icon: <Italic className="h-4 w-4" />,
+      label: "Italic",
+      shortcut: "Ctrl+I",
+      action: () => onWrap("*", "*"),
+    },
+    {
+      icon: <Strikethrough className="h-4 w-4" />,
+      label: "Strikethrough",
+      action: () => onWrap("~~", "~~"),
+    },
+    {
+      icon: <Code className="h-4 w-4" />,
+      label: "Code",
+      shortcut: "Ctrl+`",
+      action: () => onWrap("`", "`"),
+    },
   ]
 
   const linkItems: ToolbarButtonConfig[] = [
-    { icon: <Link className="h-4 w-4" />, label: "Link", shortcut: "Ctrl+K" },
-    { icon: <ImageIcon className="h-4 w-4" />, label: "Image" },
+    {
+      icon: <Link className="h-4 w-4" />,
+      label: "Link",
+      shortcut: "Ctrl+K",
+      action: () => onInsert("[link text](https://example.com)"),
+    },
+    {
+      icon: <ImageIcon className="h-4 w-4" />,
+      label: "Image",
+      action: () => onInsert("![alt text](https://picsum.photos/600/400)"),
+    },
   ]
 
   const listItems: ToolbarButtonConfig[] = [
-    { icon: <List className="h-4 w-4" />, label: "Bullet List" },
-    { icon: <ListOrdered className="h-4 w-4" />, label: "Numbered List" },
-    { icon: <CheckSquare className="h-4 w-4" />, label: "Task List" },
+    { icon: <List className="h-4 w-4" />, label: "Bullet List", action: () => onInsert("- ") },
+    {
+      icon: <ListOrdered className="h-4 w-4" />,
+      label: "Numbered List",
+      action: () => onInsert("1. "),
+    },
+    // TODO: Add warning if user tries to insert task list on unsupported platforms
+    {
+      icon: <CheckSquare className="h-4 w-4" />,
+      label: "Task List",
+      action: () => onInsert("- [ ] "),
+    },
   ]
 
   const blockItems: ToolbarButtonConfig[] = [
-    { icon: <Quote className="h-4 w-4" />, label: "Blockquote" },
-    { icon: <Table className="h-4 w-4" />, label: "Table" },
-    { icon: <Minus className="h-4 w-4" />, label: "Divider" },
+    { icon: <Quote className="h-4 w-4" />, label: "Blockquote", action: () => onInsert("> ") },
+    // TODO: Add warning if user tries to insert table on unsupported platforms
+    {
+      icon: <Table className="h-4 w-4" />,
+      label: "Table",
+      action: () =>
+        onInsert(
+          "| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n"
+        ),
+    },
+    { icon: <Minus className="h-4 w-4" />, label: "Divider", action: () => onInsert("---") },
   ]
 
   return (
@@ -198,7 +272,11 @@ export function FormattingToolbar() {
       {/* XS view - single mega-dropdown (below sm) */}
       <div className="flex shrink-0 items-center gap-0.5 sm:hidden">
         {historyButtons.map((btn) => (
-          <ToolbarButton key={btn.label} {...btn} />
+          <ToolbarButton
+            key={btn.label}
+            {...btn}
+            disabled={(btn.label === "Undo" && !canUndo) || (btn.label === "Redo" && !canRedo)}
+          />
         ))}
         <Separator className="mx-1 h-5" orientation="vertical" />
         <MegaDropdown
@@ -217,7 +295,11 @@ export function FormattingToolbar() {
       {/* Compact view - dropdowns (sm to lg) */}
       <div className="hidden shrink-0 items-center gap-0.5 sm:flex lg:hidden">
         {historyButtons.map((btn) => (
-          <ToolbarButton key={btn.label} {...btn} />
+          <ToolbarButton
+            key={btn.label}
+            {...btn}
+            disabled={(btn.label === "Undo" && !canUndo) || (btn.label === "Redo" && !canRedo)}
+          />
         ))}
         <Separator className="mx-1 h-5" orientation="vertical" />
         <ToolbarDropdown
@@ -246,11 +328,15 @@ export function FormattingToolbar() {
       {/* Full view - all buttons (lg and above) */}
       <div className="hidden shrink-0 items-center gap-0.5 lg:flex">
         {historyButtons.map((btn) => (
-          <ToolbarButton key={btn.label} {...btn} />
+          <ToolbarButton
+            key={btn.label}
+            {...btn}
+            disabled={(btn.label === "Undo" && !canUndo) || (btn.label === "Redo" && !canRedo)}
+          />
         ))}
         <Separator className="mx-1 h-5" orientation="vertical" />
         {headingItems.map((btn) => (
-          <ToolbarButton key={btn.label} icon={btn.icon} label={btn.label} />
+          <ToolbarButton key={btn.label} action={btn.action} icon={btn.icon} label={btn.label} />
         ))}
         <Separator className="mx-1 h-5" orientation="vertical" />
         {textItems.map((btn) => (

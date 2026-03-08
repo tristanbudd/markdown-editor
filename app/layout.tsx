@@ -3,6 +3,8 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
+import "highlight.js/styles/github.min.css"
+
 import { ThemeProvider } from "@/components/theme-provider"
 
 import "./globals.css"
