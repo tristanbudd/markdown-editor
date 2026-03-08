@@ -245,12 +245,25 @@ export function FormattingToolbar({
       label: "Numbered List",
       action: () => onInsert("1. "),
     },
-    { icon: <CheckSquare className="h-4 w-4" />, label: "Task List", action: () => {} },
+    // TODO: Add warning if user tries to insert task list on unsupported platforms
+    {
+      icon: <CheckSquare className="h-4 w-4" />,
+      label: "Task List",
+      action: () => onInsert("- [ ] "),
+    },
   ]
 
   const blockItems: ToolbarButtonConfig[] = [
     { icon: <Quote className="h-4 w-4" />, label: "Blockquote", action: () => onInsert("> ") },
-    { icon: <Table className="h-4 w-4" />, label: "Table", action: () => {} },
+    // TODO: Add warning if user tries to insert table on unsupported platforms
+    {
+      icon: <Table className="h-4 w-4" />,
+      label: "Table",
+      action: () =>
+        onInsert(
+          "| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n"
+        ),
+    },
     { icon: <Minus className="h-4 w-4" />, label: "Divider", action: () => onInsert("---") },
   ]
 

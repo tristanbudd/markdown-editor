@@ -49,6 +49,7 @@ const iconMap: Record<string, React.ReactNode> = {
   strikethrough: <Strikethrough className="h-3.5 w-3.5" />,
   "inline-code": <Code className="h-3.5 w-3.5" />,
   link: <Link className="h-3.5 w-3.5" />,
+  // eslint-disable-next-line
   image: <Image className="h-3.5 w-3.5" />,
   list: <List className="h-3.5 w-3.5" />,
   "list-ordered": <ListOrdered className="h-3.5 w-3.5" />,
