@@ -86,6 +86,48 @@ export function MarkdownEditor() {
     [markdown, setMarkdown]
   )
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case "b":
+            e.preventDefault()
+            handleWrapSelection("**", "**")
+            break
+          case "i":
+            e.preventDefault()
+            handleWrapSelection("*", "*")
+            break
+          case "k":
+            e.preventDefault()
+            handleInsertComponent("[link text](https://example.com)")
+            break
+          case "`":
+            e.preventDefault()
+            handleWrapSelection("`", "`")
+            break
+          case "z":
+            e.preventDefault()
+            if (e.shiftKey) {
+              redo()
+            } else {
+              undo()
+            }
+            break
+          case "y":
+            e.preventDefault()
+            redo()
+            break
+        }
+      }
+      if (e.key === "Tab") {
+        e.preventDefault()
+        handleInsertComponent("  ")
+      }
+    },
+    [handleWrapSelection, handleInsertComponent, undo, redo]
+  )
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768 && viewMode === "split") {
@@ -168,6 +210,7 @@ export function MarkdownEditor() {
                   spellCheck={false}
                   value={markdown}
                   onChange={(e) => setMarkdown(e.target.value, true)}
+                  onKeyDown={handleKeyDown}
                 />
               </div>
             </div>
