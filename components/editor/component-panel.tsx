@@ -11,7 +11,9 @@ import {
   Heading4,
   Heading5,
   Heading6,
+  Image,
   Italic,
+  Link,
   Search,
   Strikethrough,
   X,
@@ -42,6 +44,8 @@ const iconMap: Record<string, React.ReactNode> = {
   italic: <Italic className="h-3.5 w-3.5" />,
   strikethrough: <Strikethrough className="h-3.5 w-3.5" />,
   "inline-code": <Code className="h-3.5 w-3.5" />,
+  link: <Link className="h-3.5 w-3.5" />,
+  image: <Image className="h-3.5 w-3.5" />,
 }
 
 const categoryConfig: Record<PlatformStyleType, { label: string }> = {

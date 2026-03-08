@@ -225,8 +225,17 @@ export function FormattingToolbar({
   ]
 
   const linkItems: ToolbarButtonConfig[] = [
-    { icon: <Link className="h-4 w-4" />, label: "Link", shortcut: "Ctrl+K", action: () => {} },
-    { icon: <ImageIcon className="h-4 w-4" />, label: "Image", action: () => {} },
+    {
+      icon: <Link className="h-4 w-4" />,
+      label: "Link",
+      shortcut: "Ctrl+K",
+      action: () => onInsert("[link text](https://example.com)"),
+    },
+    {
+      icon: <ImageIcon className="h-4 w-4" />,
+      label: "Image",
+      action: () => onInsert("![alt text](https://picsum.photos/600/400)"),
+    },
   ]
 
   const listItems: ToolbarButtonConfig[] = [

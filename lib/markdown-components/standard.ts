@@ -79,4 +79,18 @@ export const STANDARD_COMPONENTS: InsertableComponent[] = [
     template: "`code`",
     description: "Inline code snippet",
   },
+  {
+    id: "link",
+    label: "Link",
+    icon: "link",
+    template: "[link text](https://example.com)",
+    description: "Hyperlink",
+  },
+  {
+    id: "image",
+    label: "Image",
+    icon: "image",
+    template: "![alt text](https://picsum.photos/600/400)\n",
+    description: "Embedded image",
+  },
 ]

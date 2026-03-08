@@ -92,6 +92,23 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
               }
               return null
             },
+            a: ({ ...props }) => (
+              <a
+                {...props}
+                className="md-hover-label-inline text-primary hover:text-primary/80 underline underline-offset-2"
+                rel="noopener noreferrer"
+                target="_blank"
+              />
+            ),
+            img: ({ ...props }) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                {...props}
+                alt={props.alt || ""}
+                className="md-hover-label-inline border-border h-auto max-w-full rounded-lg border"
+                loading="lazy"
+              />
+            ),
           }}
           remarkPlugins={[remarkGfm]}
         >

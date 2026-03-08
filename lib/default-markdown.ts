@@ -18,4 +18,9 @@ export const DEFAULT_MARKDOWN = `# Welcome to the Markdown Editor!
 ~~Strikethrough~~
 
 \`Inline Code\`
+
+## Links & Images
+[Example Link](https://www.example.com)
+
+![Example Image](https://picsum.photos/600/400)
 `
