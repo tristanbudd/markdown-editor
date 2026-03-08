@@ -8,4 +8,14 @@ export const DEFAULT_MARKDOWN = `# Welcome to the Markdown Editor!
 #### Heading 4
 ##### Heading 5
 ###### Heading 6
+
+## Text Formatting
+
+**Bold Text**
+
+*Italic Text*
+
+~~Strikethrough~~
+
+\`Inline Code\`
 `

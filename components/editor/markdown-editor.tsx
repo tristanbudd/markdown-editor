@@ -63,6 +63,29 @@ export function MarkdownEditor() {
     [markdown, setMarkdown]
   )
 
+  const handleWrapSelection = useCallback(
+    (before: string, after: string) => {
+      const textarea = textareaRef.current
+      if (!textarea) return
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const selectedText = markdown.slice(start, end) || "text"
+      const newValue =
+        markdown.slice(0, start) + before + selectedText + after + markdown.slice(end)
+
+      setMarkdown(newValue, true)
+
+      // Set cursor position around the selected text
+      requestAnimationFrame(() => {
+        textarea.focus()
+        const newStart = start + before.length
+        const newEnd = newStart + selectedText.length
+        textarea.setSelectionRange(newStart, newEnd)
+      })
+    },
+    [markdown, setMarkdown]
+  )
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768 && viewMode === "split") {
@@ -109,6 +132,7 @@ export function MarkdownEditor() {
           onInsert={handleInsertComponent}
           onRedo={redo}
           onUndo={undo}
+          onWrap={handleWrapSelection}
         />
         <div className="flex-1" />
         <Button

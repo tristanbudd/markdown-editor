@@ -39,6 +39,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface FormattingToolbarProps {
   onInsert: (template: string) => void
+  onWrap: (before: string, after: string) => void
   onUndo: () => void
   onRedo: () => void
   canUndo: boolean
@@ -179,6 +180,7 @@ function MegaDropdown({
 }
 
 export function FormattingToolbar({
+  onWrap,
   onInsert,
   onUndo,
   onRedo,
@@ -197,10 +199,29 @@ export function FormattingToolbar({
   ]
 
   const textItems: ToolbarButtonConfig[] = [
-    { icon: <Bold className="h-4 w-4" />, label: "Bold", shortcut: "Ctrl+B", action: () => {} },
-    { icon: <Italic className="h-4 w-4" />, label: "Italic", shortcut: "Ctrl+I", action: () => {} },
-    { icon: <Strikethrough className="h-4 w-4" />, label: "Strikethrough", action: () => {} },
-    { icon: <Code className="h-4 w-4" />, label: "Code", shortcut: "Ctrl+`", action: () => {} },
+    {
+      icon: <Bold className="h-4 w-4" />,
+      label: "Bold",
+      shortcut: "Ctrl+B",
+      action: () => onWrap("**", "**"),
+    },
+    {
+      icon: <Italic className="h-4 w-4" />,
+      label: "Italic",
+      shortcut: "Ctrl+I",
+      action: () => onWrap("*", "*"),
+    },
+    {
+      icon: <Strikethrough className="h-4 w-4" />,
+      label: "Strikethrough",
+      action: () => onWrap("~~", "~~"),
+    },
+    {
+      icon: <Code className="h-4 w-4" />,
+      label: "Code",
+      shortcut: "Ctrl+`",
+      action: () => onWrap("`", "`"),
+    },
   ]
 
   const linkItems: ToolbarButtonConfig[] = [

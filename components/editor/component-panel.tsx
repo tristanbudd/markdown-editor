@@ -3,6 +3,7 @@
 import { useState } from "react"
 import {
   Blocks,
+  Bold,
   Code,
   Heading1,
   Heading2,
@@ -10,7 +11,9 @@ import {
   Heading4,
   Heading5,
   Heading6,
+  Italic,
   Search,
+  Strikethrough,
   X,
 } from "lucide-react"
 
@@ -35,6 +38,10 @@ const iconMap: Record<string, React.ReactNode> = {
   "heading-4": <Heading4 className="h-3.5 w-3.5" />,
   "heading-5": <Heading5 className="h-3.5 w-3.5" />,
   "heading-6": <Heading6 className="h-3.5 w-3.5" />,
+  bold: <Bold className="h-3.5 w-3.5" />,
+  italic: <Italic className="h-3.5 w-3.5" />,
+  strikethrough: <Strikethrough className="h-3.5 w-3.5" />,
+  "inline-code": <Code className="h-3.5 w-3.5" />,
 }
 
 const categoryConfig: Record<PlatformStyleType, { label: string }> = {

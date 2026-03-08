@@ -51,4 +51,32 @@ export const STANDARD_COMPONENTS: InsertableComponent[] = [
     icon: "heading-6",
     template: "###### Heading 6\n",
   },
+  {
+    id: "bold",
+    label: "Bold",
+    icon: "bold",
+    template: "**bold text**",
+    description: "Bold text",
+  },
+  {
+    id: "italic",
+    label: "Italic",
+    icon: "italic",
+    template: "*italic text*",
+    description: "Italic text",
+  },
+  {
+    id: "strikethrough",
+    label: "Strikethrough",
+    icon: "strikethrough",
+    template: "~~strikethrough~~",
+    description: "Strikethrough text",
+  },
+  {
+    id: "inline-code",
+    label: "Inline Code",
+    icon: "code",
+    template: "`code`",
+    description: "Inline code snippet",
+  },
 ]

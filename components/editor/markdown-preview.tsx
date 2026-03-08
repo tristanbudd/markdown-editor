@@ -1,88 +1,103 @@
 "use client"
 
-import { useMemo } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
-import { HEADING_STYLES, PARAGRAPH_STYLE } from "@/lib/markdown-components/styles"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface MarkdownPreviewProps {
   content: string
-  // TODO: Add platform prop to apply platform-specific markdown styles
-  // platform?: "standard" | "github" | "gitlab" | "bitbucket"
-}
-
-// Simple markdown renderer for headings and basic text
-function renderMarkdown(content: string): React.ReactNode[] {
-  const lines = content.split("\n")
-  const elements: React.ReactNode[] = []
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-
-    // Heading detection
-    const h6Match = line.match(/^######\s+(.*)$/)
-    const h5Match = line.match(/^#####\s+(.*)$/)
-    const h4Match = line.match(/^####\s+(.*)$/)
-    const h3Match = line.match(/^###\s+(.*)$/)
-    const h2Match = line.match(/^##\s+(.*)$/)
-    const h1Match = line.match(/^#\s+(.*)$/)
-
-    if (h6Match) {
-      elements.push(
-        <h6 key={i} className={HEADING_STYLES.h6}>
-          {h6Match[1]}
-        </h6>
-      )
-    } else if (h5Match) {
-      elements.push(
-        <h5 key={i} className={HEADING_STYLES.h5}>
-          {h5Match[1]}
-        </h5>
-      )
-    } else if (h4Match) {
-      elements.push(
-        <h4 key={i} className={HEADING_STYLES.h4}>
-          {h4Match[1]}
-        </h4>
-      )
-    } else if (h3Match) {
-      elements.push(
-        <h3 key={i} className={HEADING_STYLES.h3}>
-          {h3Match[1]}
-        </h3>
-      )
-    } else if (h2Match) {
-      elements.push(
-        <h2 key={i} className={HEADING_STYLES.h2}>
-          {h2Match[1]}
-        </h2>
-      )
-    } else if (h1Match) {
-      elements.push(
-        <h1 key={i} className={HEADING_STYLES.h1}>
-          {h1Match[1]}
-        </h1>
-      )
-    } else if (line === "") {
-      elements.push(<br key={i} />)
-    } else {
-      elements.push(
-        <p key={i} className={PARAGRAPH_STYLE}>
-          {line}
-        </p>
-      )
-    }
-  }
-
-  return elements
 }
 
 export function MarkdownPreview({ content }: MarkdownPreviewProps) {
-  const rendered = useMemo(() => renderMarkdown(content), [content])
-
   return (
     <ScrollArea className="h-full">
-      <div className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">{rendered}</div>
+      <div className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">
+        <ReactMarkdown
+          components={{
+            h1: ({ children, ...props }) => (
+              <h1
+                {...props}
+                className="text-foreground border-border mb-4 scroll-m-20 border-b pb-2 text-2xl font-bold tracking-tight"
+              >
+                {children}
+              </h1>
+            ),
+            h2: ({ children, ...props }) => (
+              <h2
+                {...props}
+                className="text-foreground border-border mt-8 mb-3 scroll-m-20 border-b pb-1.5 text-xl font-semibold tracking-tight"
+              >
+                {children}
+              </h2>
+            ),
+            h3: ({ children, ...props }) => (
+              <h3
+                {...props}
+                className="text-foreground mt-6 mb-2 scroll-m-20 text-lg font-semibold tracking-tight"
+              >
+                {children}
+              </h3>
+            ),
+            h4: ({ children, ...props }) => (
+              <h4
+                {...props}
+                className="text-foreground mt-5 mb-1.5 scroll-m-20 text-base font-semibold tracking-tight"
+              >
+                {children}
+              </h4>
+            ),
+            h5: ({ children, ...props }) => (
+              <h5
+                {...props}
+                className="text-foreground mt-4 mb-1 scroll-m-20 text-sm font-semibold tracking-tight"
+              >
+                {children}
+              </h5>
+            ),
+            h6: ({ children, ...props }) => (
+              <h6
+                {...props}
+                className="text-muted-foreground mt-4 mb-1 scroll-m-20 text-sm font-medium tracking-tight"
+              >
+                {children}
+              </h6>
+            ),
+            strong: ({ children, ...props }) => (
+              <strong {...props} className="text-foreground font-bold">
+                {children}
+              </strong>
+            ),
+            em: ({ children, ...props }) => (
+              <em {...props} className="italic">
+                {children}
+              </em>
+            ),
+            del: ({ children, ...props }) => (
+              <del {...props} className="text-muted-foreground">
+                {children}
+              </del>
+            ),
+            code: ({ children, className, ...props }) => {
+              const isInline = !className
+              if (isInline) {
+                return (
+                  <code
+                    {...props}
+                    className="bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
+                  >
+                    {children}
+                  </code>
+                )
+              }
+              return null
+            },
+          }}
+          remarkPlugins={[remarkGfm]}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
     </ScrollArea>
   )
 }
