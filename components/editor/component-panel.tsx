@@ -5,7 +5,11 @@ import {
   Ampersand,
   Blocks,
   Bold,
+  Box,
+  ChartArea,
+  CircleAlert,
   Code,
+  Footprints,
   Heading1,
   Heading2,
   Heading3,
@@ -14,15 +18,27 @@ import {
   Heading6,
   Image,
   Italic,
+  LayoutPanelTop,
+  Lightbulb,
   Link,
   List,
   ListOrdered,
+  Map,
+  MessageCircle,
   Minus,
+  NotebookPen,
+  OctagonAlert,
   Quote,
   Search,
+  Sigma,
   Slash,
+  Smile,
+  SquareCheckBig,
+  SquareSigma,
   Strikethrough,
+  Table,
   Terminal,
+  TriangleAlert,
   X,
 } from "lucide-react"
 
@@ -62,13 +78,34 @@ const iconMap: Record<string, React.ReactNode> = {
   slash: <Slash className="h-3.5 w-3.5" />,
   terminal: <Terminal className="h-3.5 w-3.5" />,
   minus: <Minus className="h-3.5 w-3.5" />,
+  plus: <Lightbulb className="h-3.5 w-3.5" />,
+  code: <Code className="h-3.5 w-3.5" />,
+  table: <Table className="h-3.5 w-3.5" />,
+  map: <Map className="h-3.5 w-3.5" />,
+  smile: <Smile className="h-3.5 w-3.5" />,
+  "list-task": <SquareCheckBig className="h-3.5 w-3.5" />,
+  collapse: <LayoutPanelTop className="h-3.5 w-3.5" />,
+  footnote: <Footprints className="h-3.5 w-3.5" />,
+  comment: <MessageCircle className="h-3.5 w-3.5" />,
+  note: <NotebookPen className="h-3.5 w-3.5" />,
+  lightbulb: <Lightbulb className="h-3.5 w-3.5" />,
+  important: <OctagonAlert className="h-3.5 w-3.5" />,
+  warning: <TriangleAlert className="h-3.5 w-3.5" />,
+  caution: <CircleAlert className="h-3.5 w-3.5" />,
+  math: <Sigma className="h-3.5 w-3.5" />,
+  "math-block": <SquareSigma className="h-3.5 w-3.5" />,
+  diagram: <ChartArea className="h-3.5 w-3.5" />,
+  cube: <Box className="h-3.5 w-3.5" />,
 }
 
-const categoryConfig: Record<PlatformStyleType, { label: string }> = {
-  standard: { label: "Standard" },
-  github: { label: "GitHub" },
-  gitlab: { label: "GitLab" },
-  bitbucket: { label: "Bitbucket" },
+const categoryConfig: Record<
+  PlatformStyleType,
+  { label: string; backgroundColor: string; textColor: string }
+> = {
+  standard: { label: "Standard", backgroundColor: "#F5F5F5", textColor: "#000" },
+  github: { label: "GitHub", backgroundColor: "#24292f", textColor: "#fff" },
+  gitlab: { label: "GitLab", backgroundColor: "#e24329", textColor: "#fff" },
+  bitbucket: { label: "Bitbucket", backgroundColor: "#205081", textColor: "#fff" },
 }
 
 interface ComponentPanelProps {
@@ -207,6 +244,11 @@ export function ComponentPanel({
                           </span>
                           <Badge
                             className="shrink-0 px-1 py-0 text-[9px] font-normal"
+                            style={{
+                              backgroundColor:
+                                categoryConfig[isStandard ? "standard" : platform]?.backgroundColor,
+                              color: categoryConfig[isStandard ? "standard" : platform]?.textColor,
+                            }}
                             variant="secondary"
                           >
                             {categoryLabel}

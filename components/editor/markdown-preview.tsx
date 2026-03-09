@@ -1,6 +1,7 @@
 "use client"
 
-import { forwardRef, useMemo } from "react"
+import { forwardRef, useMemo, type ElementType, type HTMLAttributes, type ReactNode } from "react"
+import { Link } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
@@ -16,6 +17,12 @@ import type { PlatformType } from "./platform-selector"
 interface MarkdownPreviewProps {
   content: string
   platform: PlatformType
+}
+
+interface HeadingProps extends HTMLAttributes<HTMLElement> {
+  as?: ElementType
+  id?: string
+  children: ReactNode
 }
 
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
@@ -34,8 +41,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
         typeof rehypeKatex | typeof rehypeHighlight | typeof rehypeRaw | typeof rehypeSlug
       > = []
       plugins.push(rehypeRaw)
-      plugins.push(rehypeSlug)
       if (platform === "github" || platform === "gitlab" || platform === "bitbucket") {
+        plugins.push(rehypeSlug)
         plugins.push(rehypeHighlight)
       }
       if (platform === "github" || platform === "gitlab") {
@@ -44,58 +51,83 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       return plugins
     }, [platform])
 
+    const Heading = ({ as: Tag = "h2", children, className = "", id, ...props }: HeadingProps) => {
+      const showAnchor = platform === "github" && id
+
+      return (
+        <Tag {...props} className={`group relative ${className}`} id={id}>
+          {showAnchor && (
+            <a
+              aria-label="Anchor link"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 -left-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
+              href={`#${id}`}
+            >
+              <Link className="h-4 w-4" />
+            </a>
+          )}
+          {children}
+        </Tag>
+      )
+    }
+
     return (
       <ScrollArea className="h-full">
         <div ref={ref} className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">
           <ReactMarkdown
             components={{
               h1: ({ children, ...props }) => (
-                <h1
+                <Heading
+                  as="h1"
                   {...props}
                   className="text-foreground border-border mb-4 scroll-m-20 border-b pb-2 text-2xl font-bold tracking-tight"
                 >
                   {children}
-                </h1>
+                </Heading>
               ),
               h2: ({ children, ...props }) => (
-                <h2
+                <Heading
+                  as="h2"
                   {...props}
                   className="text-foreground border-border mt-8 mb-3 scroll-m-20 border-b pb-1.5 text-xl font-semibold tracking-tight"
                 >
                   {children}
-                </h2>
+                </Heading>
               ),
               h3: ({ children, ...props }) => (
-                <h3
+                <Heading
+                  as="h3"
                   {...props}
                   className="text-foreground mt-6 mb-2 scroll-m-20 text-lg font-semibold tracking-tight"
                 >
                   {children}
-                </h3>
+                </Heading>
               ),
               h4: ({ children, ...props }) => (
-                <h4
+                <Heading
+                  as="h4"
                   {...props}
                   className="text-foreground mt-5 mb-1.5 scroll-m-20 text-base font-semibold tracking-tight"
                 >
                   {children}
-                </h4>
+                </Heading>
               ),
               h5: ({ children, ...props }) => (
-                <h5
+                <Heading
+                  as="h5"
                   {...props}
                   className="text-foreground mt-4 mb-1 scroll-m-20 text-sm font-semibold tracking-tight"
                 >
                   {children}
-                </h5>
+                </Heading>
               ),
               h6: ({ children, ...props }) => (
-                <h6
+                <Heading
+                  as="h6"
                   {...props}
                   className="text-muted-foreground mt-4 mb-1 scroll-m-20 text-sm font-medium tracking-tight"
                 >
                   {children}
-                </h6>
+                </Heading>
               ),
               strong: ({ children, ...props }) => (
                 <strong {...props} className="text-foreground font-bold">
@@ -114,14 +146,48 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               ),
               code: ({ className, children, ...props }) => {
                 const isInline = !className
+                // Only string children are expected for inline code
+                const codeValue = Array.isArray(children) ? children.join("") : children
+                // Regex for HEX, RGB, HSL
+                const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+                const rgbRegex =
+                  /^rgb\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/
+                const hslRegex =
+                  /^hsl\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*\)$/
+                let color = null
+                if (typeof codeValue === "string") {
+                  if (hexRegex.test(codeValue)) {
+                    color = codeValue
+                  } else if (rgbRegex.test(codeValue)) {
+                    color = codeValue
+                  } else if (hslRegex.test(codeValue)) {
+                    color = codeValue
+                  }
+                }
                 if (isInline) {
                   return (
-                    <code
-                      className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
-                      {...props}
-                    >
-                      {children}
-                    </code>
+                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                      <code
+                        className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
+                        {...props}
+                      >
+                        {children}
+                        {color && (
+                          <span
+                            aria-label={`Color preview for ${color}`}
+                            style={{
+                              display: "inline-block",
+                              width: "10px",
+                              height: "10px",
+                              borderRadius: "50%",
+                              background: color,
+                              marginLeft: "0.4em",
+                              border: "1px solid #ccc",
+                            }}
+                          />
+                        )}
+                      </code>
+                    </span>
                   )
                 }
                 return (
