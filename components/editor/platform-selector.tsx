@@ -30,7 +30,6 @@ const PLATFORMS: Platform[] = [
     id: "github",
     name: "GitHub",
     description: "GitHub Markdown Style",
-    disabled: true,
   },
   {
     id: "gitlab",

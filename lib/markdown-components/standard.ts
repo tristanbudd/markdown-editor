@@ -120,7 +120,7 @@ export const STANDARD_COMPONENTS: InsertableComponent[] = [
     label: "Blockquote",
     description: "Quoted insight",
     icon: "quote",
-    template: "> Blockquote\n",
+    template: "> Blockquote\n\n",
   },
   {
     id: "indented-code-block",

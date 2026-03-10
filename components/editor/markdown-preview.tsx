@@ -1,6 +1,15 @@
-"use client"
-
-import { forwardRef, useMemo } from "react"
+import { forwardRef, useMemo, type ElementType, type HTMLAttributes, type ReactNode } from "react"
+import {
+  AlertCircle,
+  AlertTriangle,
+  Box,
+  Info,
+  Lightbulb,
+  Link,
+  Map as MapIcon,
+  Workflow,
+  XOctagon,
+} from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
@@ -8,23 +17,397 @@ import rehypeRaw from "rehype-raw"
 import rehypeSlug from "rehype-slug"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
+import type { PluggableList, Plugin } from "unified"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
+
+// Type for React element with props and children
+interface ReactChildWithProps {
+  type?: unknown
+  props?: {
+    children?: React.ReactNode | React.ReactNode[] | string
+    [key: string]: unknown
+  }
+}
 
 interface MarkdownPreviewProps {
   content: string
   platform: PlatformType
 }
 
+interface HeadingProps extends HTMLAttributes<HTMLElement> {
+  as?: ElementType
+  id?: string
+  children: ReactNode
+}
+
+const EMOJI_MAP: Record<string, string> = {
+  smile: "😄",
+  laughing: "😆",
+  blush: "😊",
+  smiley: "😃",
+  relaxed: "☺️",
+  smirk: "😏",
+  heart_eyes: "😍",
+  kissing_heart: "😘",
+  kissing_closed_eyes: "😚",
+  flushed: "😳",
+  relieved: "😌",
+  satisfied: "😆",
+  grin: "😁",
+  wink: "😉",
+  stuck_out_tongue_winking_eye: "😜",
+  stuck_out_tongue_closed_eyes: "😝",
+  grinning: "😀",
+  kissing: "😗",
+  kissing_smiling_eyes: "😙",
+  stuck_out_tongue: "😛",
+  sleeping: "😴",
+  worried: "😟",
+  frowning: "😦",
+  anguished: "😧",
+  open_mouth: "😮",
+  grimacing: "😬",
+  confused: "😕",
+  hushed: "😯",
+  expressionless: "😑",
+  unamused: "😒",
+  sweat_smile: "😅",
+  sweat: "😓",
+  disappointed_relieved: "😥",
+  weary: "😩",
+  pensive: "😔",
+  disappointed: "😞",
+  confounded: "😖",
+  fearful: "😨",
+  cold_sweat: "😰",
+  persevere: "😣",
+  cry: "😢",
+  sob: "😭",
+  joy: "😂",
+  astonished: "😲",
+  scream: "😱",
+  tired_face: "😫",
+  angry: "😠",
+  rage: "😡",
+  triumph: "😤",
+  sleepy: "😪",
+  yum: "😋",
+  mask: "😷",
+  sunglasses: "😎",
+  dizzy_face: "😵",
+  imp: "👿",
+  smiling_imp: "😈",
+  neutral_face: "😐",
+  no_mouth: "😶",
+  innocent: "😇",
+  alien: "👽",
+  yellow_heart: "💛",
+  blue_heart: "💙",
+  purple_heart: "💜",
+  heart: "❤️",
+  green_heart: "💚",
+  broken_heart: "💔",
+  heartbeat: "💓",
+  heartpulse: "💗",
+  two_hearts: "💕",
+  revolving_hearts: "💞",
+  cupid: "💘",
+  sparkling_heart: "💖",
+  sparkles: "✨",
+  star: "⭐",
+  star2: "🌟",
+  dizzy: "💫",
+  boom: "💥",
+  collision: "💥",
+  anger: "💢",
+  exclamation: "❗",
+  question: "❓",
+  grey_exclamation: "❕",
+  grey_question: "❔",
+  zzz: "💤",
+  dash: "💨",
+  sweat_drops: "💦",
+  notes: "🎶",
+  musical_note: "🎵",
+  fire: "🔥",
+  poop: "💩",
+  thumbsup: "👍",
+  thumbsdown: "👎",
+  ok_hand: "👌",
+  punch: "👊",
+  facepunch: "👊",
+  fist: "✊",
+  v: "✌️",
+  wave: "👋",
+  hand: "✋",
+  raised_hand: "✋",
+  open_hands: "👐",
+  point_up: "☝️",
+  point_down: "👇",
+  point_left: "👈",
+  point_right: "👉",
+  raised_hands: "🙌",
+  pray: "🙏",
+  point_up_2: "👆",
+  clap: "👏",
+  muscle: "💪",
+  metal: "🤘",
+  fu: "🖕",
+  walking: "🚶",
+  runner: "🏃",
+  running: "🏃",
+  couple: "👫",
+  family: "👪",
+  two_men_holding_hands: "👬",
+  two_women_holding_hands: "👭",
+  dancer: "💃",
+  dancers: "👯",
+  ok_woman: "🙆",
+  no_good: "🙅",
+  information_desk_person: "💁",
+  raising_hand: "🙋",
+  bride_with_veil: "👰",
+  person_with_pouting_face: "🙎",
+  person_frowning: "🙍",
+  bow: "🙇",
+  couplekiss: "💏",
+  couple_with_heart: "💑",
+  massage: "💆",
+  haircut: "💇",
+  nail_care: "💅",
+  boy: "👦",
+  girl: "👧",
+  woman: "👩",
+  man: "👨",
+  baby: "👶",
+  older_woman: "👵",
+  older_man: "👴",
+  person_with_blond_hair: "👱",
+  man_with_gua_pi_mao: "👲",
+  man_with_turban: "👳",
+  construction_worker: "👷",
+  cop: "👮",
+  angel: "👼",
+  princess: "👸",
+  smiley_cat: "😺",
+  smile_cat: "😸",
+  heart_eyes_cat: "😻",
+  kissing_cat: "😽",
+  smirk_cat: "😼",
+  scream_cat: "🙀",
+  crying_cat_face: "😿",
+  joy_cat: "😹",
+  pouting_cat: "😾",
+  japanese_ogre: "👹",
+  japanese_goblin: "👺",
+  see_no_evil: "🙈",
+  hear_no_evil: "🙉",
+  speak_no_evil: "🙊",
+  guardsman: "💂",
+  skull: "💀",
+  feet: "🐾",
+  lips: "👄",
+  kiss: "💋",
+  droplet: "💧",
+  ear: "👂",
+  eyes: "👀",
+  nose: "👃",
+  tongue: "👅",
+  love_letter: "💌",
+  bust_in_silhouette: "👤",
+  busts_in_silhouette: "👥",
+  speech_balloon: "💬",
+  thought_balloon: "💭",
+  rocket: "🚀",
+  helicopter: "🚁",
+  steam_locomotive: "🚂",
+  railway_car: "🚃",
+  bullettrain_side: "🚄",
+  bullettrain_front: "🚅",
+  train2: "🚆",
+  metro: "🚇",
+  light_rail: "🚈",
+  station: "🚉",
+  tram: "🚊",
+  train: "🚋",
+  bus: "🚌",
+  oncoming_bus: "🚍",
+  trolleybus: "🚎",
+  busstop: "🚏",
+  minibus: "🚐",
+  ambulance: "🚑",
+  fire_engine: "🚒",
+  police_car: "🚓",
+  oncoming_police_car: "🚔",
+  taxi: "🚕",
+  oncoming_taxi: "🚖",
+  car: "🚗",
+  red_car: "🚗",
+  oncoming_automobile: "🚘",
+  blue_car: "🚙",
+  truck: "🚚",
+  articulated_lorry: "🚛",
+  tractor: "🚜",
+  monorail: "🚝",
+  mountain_railway: "🚞",
+  suspension_railway: "🚟",
+  cable_car: "🚠",
+  aerial_tramway: "🚡",
+  ship: "🚢",
+  boat: "⛵",
+  sailboat: "⛵",
+  speedboat: "🚤",
+  traffic_light: "🚥",
+  vertical_traffic_light: "🚦",
+  construction: "🚧",
+  rotating_light: "🚨",
+  triangular_flag_on_post: "🚩",
+  door: "🚪",
+  no_entry_sign: "🚫",
+  smoking: "🚬",
+  no_smoking: "🚭",
+  put_litter_in_its_place: "🚮",
+  do_not_litter: "🚯",
+  potable_water: "🚰",
+  non_potable_water: "🚱",
+  bike: "🚲",
+  no_bicycles: "🚳",
+  bicyclist: "🚴",
+  mountain_bicyclist: "🚵",
+  walking_man: "🚶",
+  no_pedestrians: "🚷",
+  children_crossing: "🚸",
+  mens: "🚹",
+  womens: "🚺",
+  restroom: "🚻",
+  baby_symbol: "🚼",
+  toilet: "🚽",
+  wc: "🚾",
+  shower: "🚿",
+  bath: "🛀",
+  bathtub: "🛁",
+  passport_control: "🛂",
+  customs: "🛃",
+  baggage_claim: "🛄",
+  left_luggage: "🛅",
+  couch_and_lamp: "🛋️",
+  sleeping_accommodation: "🛌",
+  shopping_bags: "🛍️",
+  bellhop_bell: "🛎️",
+  bed: "🛏️",
+  place_of_worship: "🛐",
+  octagonal_sign: "🛑",
+  shopping_cart: "🛒",
+  checkered_flag: "🏁",
+  crossed_flags: "🎌",
+  rainbow_flag: "🏳️‍🌈",
+  rosette: "🏵️",
+  reminder_ribbon: "🎗️",
+  admission_tickets: "🎟️",
+  ticket: "🎫",
+  medal_military: "🎖️",
+  trophy: "🏆",
+  sports_medal: "🏅",
+  first_place_medal: "🥇",
+  second_place_medal: "🥈",
+  third_place_medal: "🥉",
+  soccer: "⚽",
+  baseball: "⚾",
+  basketball: "🏀",
+  volleyball: "🏐",
+  football: "🏈",
+  rugby_football: "🏉",
+  tennis: "🎾",
+  nazar_amulet: "🧿",
+  jigsaw: "🧩",
+  teddy_bear: "🧸",
+  broom: "🧹",
+  basket: "🧺",
+  roll_of_paper: "🧻",
+  soap: "🧼",
+  sponge: "🧽",
+  receipt: "🧾",
+  safety_pin: "🧷",
+}
+
+// Use specific types for unist tree nodes if available, or fallback to an interfac
+interface UnistNode {
+  type: string
+  value?: string
+  children?: UnistNode[]
+  data?: {
+    hProperties?: {
+      className?: string
+    }
+    [key: string]: unknown
+  }
+}
+
+const remarkEmojis = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode) => {
+    if (node.type === "text" && node.value) {
+      // Avoid replacing inside code blocks if they are parsed as text, though unified stringifies them to code nodes
+      node.value = node.value.replace(/:([a-z0-9_+-]+):/g, (match: string, p1: string) => {
+        return EMOJI_MAP[p1] || match
+      })
+    }
+    if (node.children) {
+      node.children.forEach(walk)
+    }
+  }
+  walk(tree)
+}
+
+const remarkGithubAlerts = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode) => {
+    if (node.type === "blockquote" && node.children && node.children.length > 0) {
+      const firstChild = node.children[0]
+      if (
+        firstChild.type === "paragraph" &&
+        firstChild.children &&
+        firstChild.children.length > 0
+      ) {
+        const firstTextNode = firstChild.children[0]
+        if (firstTextNode.type === "text" && firstTextNode.value) {
+          const match = firstTextNode.value.match(
+            /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s*\n|\s+|$)([\s\S]*)/i
+          )
+          if (match) {
+            const alertType = match[1].toLowerCase()
+            const remainingText = match[2]
+
+            node.data = node.data || {}
+            node.data.hProperties = node.data.hProperties || {}
+            node.data.hProperties.className = `github-alert github-alert-${alertType}`
+
+            if (remainingText) {
+              firstTextNode.value = remainingText
+            } else {
+              firstChild.children.shift()
+            }
+          }
+        }
+      }
+    }
+    if (node.children) {
+      node.children.forEach(walk)
+    }
+  }
+  walk(tree)
+}
+
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
   function MarkdownPreview({ content, platform }, ref) {
     const remarkPlugins = useMemo(() => {
-      const plugins: Array<typeof remarkGfm | typeof remarkMath> = []
+      const plugins: PluggableList = []
       plugins.push(remarkGfm)
       if (platform === "github" || platform === "gitlab") {
         plugins.push(remarkMath)
+        plugins.push(remarkEmojis as Plugin)
+        plugins.push(remarkGithubAlerts as Plugin)
       }
       return plugins
     }, [platform])
@@ -34,8 +417,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
         typeof rehypeKatex | typeof rehypeHighlight | typeof rehypeRaw | typeof rehypeSlug
       > = []
       plugins.push(rehypeRaw)
-      plugins.push(rehypeSlug)
       if (platform === "github" || platform === "gitlab" || platform === "bitbucket") {
+        plugins.push(rehypeSlug)
         plugins.push(rehypeHighlight)
       }
       if (platform === "github" || platform === "gitlab") {
@@ -44,58 +427,83 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       return plugins
     }, [platform])
 
+    const Heading = ({ as: Tag = "h2", children, className = "", id, ...props }: HeadingProps) => {
+      const showAnchor = platform === "github" && id
+
+      return (
+        <Tag {...props} className={`group relative ${className}`} id={id}>
+          {showAnchor && (
+            <a
+              aria-label="Anchor link"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 -left-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
+              href={`#${id}`}
+            >
+              <Link className="h-4 w-4" />
+            </a>
+          )}
+          {children}
+        </Tag>
+      )
+    }
+
     return (
       <ScrollArea className="h-full">
         <div ref={ref} className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">
           <ReactMarkdown
             components={{
               h1: ({ children, ...props }) => (
-                <h1
+                <Heading
+                  as="h1"
                   {...props}
                   className="text-foreground border-border mb-4 scroll-m-20 border-b pb-2 text-2xl font-bold tracking-tight"
                 >
                   {children}
-                </h1>
+                </Heading>
               ),
               h2: ({ children, ...props }) => (
-                <h2
+                <Heading
+                  as="h2"
                   {...props}
                   className="text-foreground border-border mt-8 mb-3 scroll-m-20 border-b pb-1.5 text-xl font-semibold tracking-tight"
                 >
                   {children}
-                </h2>
+                </Heading>
               ),
               h3: ({ children, ...props }) => (
-                <h3
+                <Heading
+                  as="h3"
                   {...props}
                   className="text-foreground mt-6 mb-2 scroll-m-20 text-lg font-semibold tracking-tight"
                 >
                   {children}
-                </h3>
+                </Heading>
               ),
               h4: ({ children, ...props }) => (
-                <h4
+                <Heading
+                  as="h4"
                   {...props}
                   className="text-foreground mt-5 mb-1.5 scroll-m-20 text-base font-semibold tracking-tight"
                 >
                   {children}
-                </h4>
+                </Heading>
               ),
               h5: ({ children, ...props }) => (
-                <h5
+                <Heading
+                  as="h5"
                   {...props}
                   className="text-foreground mt-4 mb-1 scroll-m-20 text-sm font-semibold tracking-tight"
                 >
                   {children}
-                </h5>
+                </Heading>
               ),
               h6: ({ children, ...props }) => (
-                <h6
+                <Heading
+                  as="h6"
                   {...props}
                   className="text-muted-foreground mt-4 mb-1 scroll-m-20 text-sm font-medium tracking-tight"
                 >
                   {children}
-                </h6>
+                </Heading>
               ),
               strong: ({ children, ...props }) => (
                 <strong {...props} className="text-foreground font-bold">
@@ -114,14 +522,48 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               ),
               code: ({ className, children, ...props }) => {
                 const isInline = !className
+                // Only string children are expected for inline code
+                const codeValue = Array.isArray(children) ? children.join("") : children
+                // Regex for HEX, RGB, HSL
+                const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+                const rgbRegex =
+                  /^rgb\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/
+                const hslRegex =
+                  /^hsl\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*\)$/
+                let color = null
+                if (typeof codeValue === "string") {
+                  if (hexRegex.test(codeValue)) {
+                    color = codeValue
+                  } else if (rgbRegex.test(codeValue)) {
+                    color = codeValue
+                  } else if (hslRegex.test(codeValue)) {
+                    color = codeValue
+                  }
+                }
                 if (isInline) {
                   return (
-                    <code
-                      className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
-                      {...props}
-                    >
-                      {children}
-                    </code>
+                    <span style={{ display: "inline-flex", alignItems: "center" }}>
+                      <code
+                        className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
+                        {...props}
+                      >
+                        {children}
+                        {color && (
+                          <span
+                            aria-label={`Color preview for ${color}`}
+                            style={{
+                              display: "inline-block",
+                              width: "10px",
+                              height: "10px",
+                              borderRadius: "50%",
+                              background: color,
+                              marginLeft: "0.4em",
+                              border: "1px solid #ccc",
+                            }}
+                          />
+                        )}
+                      </code>
+                    </span>
                   )
                 }
                 return (
@@ -149,11 +591,68 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               ),
               ul: ({ className, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
+                const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (isTaskList && !isPlatformTaskList) {
+                  // Remove input tags and only show text with [ ] or [x] markers
+                  const extractTaskText = (child: React.ReactNode) => {
+                    if (typeof child === "string") return child
+                    if (typeof child === "object" && child !== null && "props" in child) {
+                      const element = child as ReactChildWithProps
+                      if (Array.isArray(element.props?.children)) {
+                        return element.props.children
+                          .filter((grandchild: React.ReactNode) => {
+                            if (
+                              typeof grandchild === "object" &&
+                              grandchild !== null &&
+                              "type" in grandchild
+                            ) {
+                              const grandElement = grandchild as ReactChildWithProps
+                              return grandElement.type !== "input"
+                            }
+                            return true
+                          })
+                          .map((grandchild: React.ReactNode) => {
+                            if (typeof grandchild === "string") return grandchild
+                            if (
+                              typeof grandchild === "object" &&
+                              grandchild !== null &&
+                              "props" in grandchild
+                            ) {
+                              const grandElement = grandchild as ReactChildWithProps
+                              return grandElement.props?.children || ""
+                            }
+                            return ""
+                          })
+                          .join("")
+                      }
+                      if (typeof element.props?.children === "string") {
+                        return element.props.children
+                      }
+                    }
+                    return ""
+                  }
+                  return (
+                    <ul className="md-hover-label my-2 ml-4 list-disc space-y-1">
+                      {Array.isArray(props.children) ? (
+                        props.children.map((child, idx) => {
+                          const text = extractTaskText(child)
+                          return text.trim() ? (
+                            <li key={idx} className="text-muted-foreground leading-relaxed">
+                              {text}
+                            </li>
+                          ) : null
+                        })
+                      ) : typeof props.children === "string" ? (
+                        <li className="text-muted-foreground leading-relaxed">{props.children}</li>
+                      ) : null}
+                    </ul>
+                  )
+                }
                 return (
                   <ul
                     {...props}
                     className={`md-hover-label my-2 ml-4 ${
-                      isTaskList ? "ml-0 list-none pl-0" : "list-disc"
+                      isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"
                     } space-y-1`}
                   />
                 )
@@ -164,19 +663,115 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               li: ({ ...props }) => (
                 <li {...props} className="text-muted-foreground leading-relaxed" />
               ),
-              blockquote: ({ ...props }) => (
-                <blockquote
-                  {...props}
-                  className="md-hover-label border-primary/40 text-muted-foreground my-4 border-l-3 pl-4 italic"
-                />
-              ),
+              blockquote: ({ className, children, ...props }) => {
+                const classStr = String(className || "")
+                if (classStr.includes("github-alert")) {
+                  let alertType: "note" | "tip" | "important" | "warning" | "caution" = "note"
+                  if (classStr.includes("github-alert-tip")) alertType = "tip"
+                  else if (classStr.includes("github-alert-important")) alertType = "important"
+                  else if (classStr.includes("github-alert-warning")) alertType = "warning"
+                  else if (classStr.includes("github-alert-caution")) alertType = "caution"
+
+                  const Icon = {
+                    note: Info,
+                    tip: Lightbulb,
+                    important: AlertCircle,
+                    warning: AlertTriangle,
+                    caution: XOctagon,
+                  }[alertType]
+
+                  const colorClass = {
+                    note: "border-blue-500 [&>p]:text-foreground bg-blue-500/10",
+                    tip: "border-green-500 [&>p]:text-foreground bg-green-500/10",
+                    important: "border-purple-500 [&>p]:text-foreground bg-purple-500/10",
+                    warning: "border-yellow-500 [&>p]:text-foreground bg-yellow-500/10",
+                    caution: "border-red-500 [&>p]:text-foreground bg-red-500/10",
+                  }[alertType]
+
+                  const textColorClass = {
+                    note: "text-blue-500",
+                    tip: "text-green-500",
+                    important: "text-purple-500",
+                    warning: "text-yellow-500",
+                    caution: "text-red-500",
+                  }[alertType]
+
+                  return (
+                    <blockquote
+                      {...props}
+                      className={`md-hover-label my-4 border-l-4 px-4 py-3 ${colorClass} rounded-r-lg ${className}`}
+                    >
+                      <div
+                        className={`mb-2 flex items-center gap-2 font-semibold ${textColorClass}`}
+                      >
+                        {Icon && <Icon className="h-4 w-4" />}
+                        <span className="capitalize">{alertType}</span>
+                      </div>
+                      <div className="text-foreground/80">{children}</div>
+                    </blockquote>
+                  )
+                }
+
+                return (
+                  <blockquote
+                    {...props}
+                    className="md-hover-label border-primary/40 text-muted-foreground my-4 border-l-4 pl-4 italic"
+                  >
+                    {children}
+                  </blockquote>
+                )
+              },
               hr: () => <hr className="md-hover-label border-border my-8" />,
-              pre: ({ ...props }) => (
-                <pre
-                  {...props}
-                  className="md-hover-label border-border bg-muted/50 overflow-x-auto rounded-lg border p-4 text-sm"
-                />
-              ),
+              pre: ({ className, children, node, ...props }) => {
+                let lang = ""
+                const firstChild = node?.children?.[0]
+                if (firstChild?.type === "element" && firstChild.tagName === "code") {
+                  const childClass = firstChild.properties?.className || []
+                  const match = /language-(\w+)/.exec(
+                    Array.isArray(childClass)
+                      ? childClass.map(String).join(" ")
+                      : String(childClass)
+                  )
+                  if (match) lang = match[1].toLowerCase()
+                }
+
+                if (
+                  lang &&
+                  ["mermaid", "geojson", "topojson", "stl"].includes(lang) &&
+                  (platform === "github" || platform === "gitlab")
+                ) {
+                  return (
+                    <div
+                      className={`md-hover-label border-border bg-muted/10 my-4 overflow-hidden rounded-lg border ${
+                        className || ""
+                      }`}
+                    >
+                      <div className="bg-muted text-muted-foreground border-border flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold uppercase">
+                        {lang === "mermaid" ? (
+                          <Workflow className="h-4 w-4" />
+                        ) : lang === "geojson" || lang === "topojson" ? (
+                          <MapIcon className="h-4 w-4" />
+                        ) : lang === "stl" ? (
+                          <Box className="h-4 w-4" />
+                        ) : null}
+                        {lang} Preview (Simulated)
+                      </div>
+                      <pre className="text-foreground/80 bg-background/50 m-0 overflow-auto rounded-none border-0 p-4 font-mono text-sm">
+                        {children}
+                      </pre>
+                    </div>
+                  )
+                }
+
+                return (
+                  <pre
+                    {...props}
+                    className="md-hover-label border-border bg-muted/50 my-4 overflow-x-auto rounded-lg border p-4 text-sm"
+                  >
+                    {children}
+                  </pre>
+                )
+              },
               summary: ({ ...props }) => (
                 <summary
                   {...props}
@@ -186,6 +781,50 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               sup: ({ ...props }) => (
                 <sup {...props} className="md-hover-label-inline text-primary text-xs" />
               ),
+              table: ({ ...props }) => {
+                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (!isPlatformTable) return props.children
+                return (
+                  <div className="md-hover-label my-6 w-full overflow-y-auto">
+                    <table {...props} className="w-full overflow-hidden rounded-lg" />
+                  </div>
+                )
+              },
+              thead: ({ ...props }) => {
+                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (!isPlatformTable) return props.children
+                return <thead {...props} className="bg-muted/50 border-b" />
+              },
+              tbody: ({ ...props }) => {
+                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (!isPlatformTable) return props.children
+                return <tbody {...props} className="divide-border divide-y" />
+              },
+              tr: ({ ...props }) => {
+                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (!isPlatformTable) return props.children
+                return <tr {...props} className="hover:bg-muted/30 transition-colors" />
+              },
+              th: ({ ...props }) => {
+                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (!isPlatformTable) return props.children
+                return (
+                  <th
+                    {...props}
+                    className="text-foreground border-r px-4 py-3 text-left font-semibold last:border-0"
+                  />
+                )
+              },
+              td: ({ ...props }) => {
+                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
+                if (!isPlatformTable) return props.children
+                return (
+                  <td
+                    {...props}
+                    className="text-muted-foreground border-r px-4 py-3 last:border-0"
+                  />
+                )
+              },
             }}
             rehypePlugins={rehypePlugins}
             remarkPlugins={remarkPlugins}
