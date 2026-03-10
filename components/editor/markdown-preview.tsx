@@ -637,13 +637,13 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         props.children.map((child, idx) => {
                           const text = extractTaskText(child)
                           return text.trim() ? (
-                            <li key={idx} className="text-muted-foreground leading-relaxed">
+                            <li key={idx} className="leading-relaxed">
                               {text}
                             </li>
                           ) : null
                         })
                       ) : typeof props.children === "string" ? (
-                        <li className="text-muted-foreground leading-relaxed">{props.children}</li>
+                        <li className="leading-relaxed">{props.children}</li>
                       ) : null}
                     </ul>
                   )
@@ -660,9 +660,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               ol: ({ ...props }) => (
                 <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
               ),
-              li: ({ ...props }) => (
-                <li {...props} className="text-muted-foreground leading-relaxed" />
-              ),
+              li: ({ ...props }) => <li {...props} className="leading-relaxed" />,
               blockquote: ({ className, children, ...props }) => {
                 const classStr = String(className || "")
                 if (classStr.includes("github-alert")) {
