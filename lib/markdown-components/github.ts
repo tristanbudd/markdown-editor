@@ -6,14 +6,14 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     label: "Table",
     description: "Insert a table",
     icon: "table",
-    template: "| Column 1 | Column 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |",
+    template: "| Column 1 | Column 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n",
   },
   {
     id: "task-list",
     label: "Task List",
     description: "Insert a task list",
     icon: "list-task",
-    template: "- [ ] Task 1\n- [x] Task 2",
+    template: "- [ ] Task 1\n- [x] Task 2\n",
   },
   {
     id: "emoji",
@@ -28,21 +28,21 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a collapsible section",
     icon: "collapse",
     template:
-      "<details>\n  <summary>Click to expand</summary>\n\n  Collapsible content goes here.\n\n</details>",
+      "<details>\n  <summary>Click to expand</summary>\n\n  Collapsible content goes here.\n\n</details>\n\n",
   },
   {
     id: "footnote",
     label: "Footnote",
     description: "Insert a footnote",
     icon: "footnote",
-    template: "Here is a footnote reference[^1].\n\n[^1]: Here is the footnote.",
+    template: "Here is a footnote reference[^1].\n\n[^1]: Here is the footnote.\n",
   },
   {
     id: "comment",
     label: "Comment",
     description: "Insert a comment that won't be rendered",
     icon: "comment",
-    template: "<!-- This is a comment -->",
+    template: "<!-- This is a comment -->\n",
   },
   {
     id: "note",
@@ -50,7 +50,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a note block",
     icon: "note",
     template:
-      "> [!NOTE]\n> This is a note. Notes are great for highlighting important information or providing additional context.",
+      "> [!NOTE]\n> This is a note. Notes are great for highlighting important information or providing additional context.\n\n",
   },
   {
     id: "tip",
@@ -58,7 +58,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a tip block",
     icon: "lightbulb",
     template:
-      "> [!TIP]\n> This is a tip. Tips are useful for offering helpful advice or best practices.",
+      "> [!TIP]\n> This is a tip. Tips are useful for offering helpful advice or best practices.\n\n",
   },
   {
     id: "important",
@@ -66,7 +66,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert an important block",
     icon: "important",
     template:
-      "> [!IMPORTANT]\n> This is important. Use important blocks to emphasize critical information that users must pay attention to.",
+      "> [!IMPORTANT]\n> This is important. Use important blocks to emphasize critical information that users must pay attention to.\n\n",
   },
   {
     id: "warning",
@@ -74,7 +74,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a warning block",
     icon: "warning",
     template:
-      "> [!WARNING]\n> This is a warning. Warnings should be used to alert readers about potential issues or important considerations.",
+      "> [!WARNING]\n> This is a warning. Warnings should be used to alert readers about potential issues or important considerations.\n\n",
   },
   {
     id: "caution",
@@ -82,28 +82,28 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a caution block",
     icon: "caution",
     template:
-      "> [!CAUTION]\n> This is a caution. Cautions are ideal for advising readers about risks or negative outcomes associated with certain actions.",
+      "> [!CAUTION]\n> This is a caution. Cautions are ideal for advising readers about risks or negative outcomes associated with certain actions.\n\n",
   },
   {
     id: "inline-math",
     label: "Inline Math",
     description: "Insert inline math formula",
     icon: "math",
-    template: "$E=mc^2$",
+    template: "$E=mc^2$\n",
   },
   {
     id: "math-block",
     label: "Math Block",
     description: "Insert a math block",
     icon: "math-block",
-    template: "$$\nE=mc^2\n$$",
+    template: "$$\nE=mc^2\n$$\n\n",
   },
   {
     id: "diagram",
     label: "Diagram",
     description: "Insert a Mermaid diagram",
     icon: "diagram",
-    template: "```mermaid\ngraph TD;\n  A-->B;\n  A-->C;\n  B-->D;\n  C-->D;\n```",
+    template: "```mermaid\ngraph TD;\n  A-->B;\n  A-->C;\n  B-->D;\n  C-->D;\n```\n",
   },
   {
     id: "geojson",
@@ -111,7 +111,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a GeoJSON map",
     icon: "map",
     template:
-      '```geojson\n{\n  "type": "FeatureCollection",\n  "features": [\n    {\n      "type": "Feature",\n      "properties": {},\n      "geometry": {\n        "type": "Point",\n        "coordinates": [0, 0]\n      }\n    }\n  ]\n}\n```',
+      '```geojson\n{\n  "type": "FeatureCollection",\n  "features": [\n    {\n      "type": "Feature",\n      "properties": {},\n      "geometry": {\n        "type": "Point",\n        "coordinates": [0, 0]\n      }\n    }\n  ]\n}\n```\n',
   },
   {
     id: "topojson",
@@ -119,7 +119,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a TopoJSON map",
     icon: "map",
     template:
-      '```topojson\n{\n  "type": "Topology",\n  "objects": {},\n  "arcs": [],\n  "transform": {}\n}\n```',
+      '```topojson\n{\n  "type": "Topology",\n  "objects": {},\n  "arcs": [],\n  "transform": {}\n}\n```\n',
   },
   {
     id: "stl3d",
@@ -127,6 +127,6 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     description: "Insert a 3D model in STL format",
     icon: "cube",
     template:
-      "```stl\nsolid cube\n  facet normal 0 0 1\n    outer loop\n      vertex 0 0 0\n      vertex 1 0 0\n      vertex 1 1 0\n    endloop\n  endfacet\nendsolid cube\n```",
+      "```stl\nsolid cube\n  facet normal 0 0 1\n    outer loop\n      vertex 0 0 0\n      vertex 1 0 0\n      vertex 1 1 0\n    endloop\n  endfacet\nendsolid cube\n```\n",
   },
 ]
