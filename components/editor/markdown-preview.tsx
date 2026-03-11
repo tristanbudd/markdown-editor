@@ -1,4 +1,14 @@
-import { forwardRef, useMemo, type ElementType, type HTMLAttributes, type ReactNode } from "react"
+import {
+  cloneElement,
+  forwardRef,
+  Fragment,
+  isValidElement,
+  useMemo,
+  type ElementType,
+  type HTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from "react"
 import {
   AlertCircle,
   AlertTriangle,
@@ -23,6 +33,16 @@ import type { PluggableList, Plugin } from "unified"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
+
+type TaskElementProps = {
+  children?: ReactNode
+  checked?: boolean
+  type?: string
+}
+
+function isTaskElement(node: ReactNode): node is ReactElement<TaskElementProps> {
+  return isValidElement(node)
+}
 
 interface MarkdownPreviewProps {
   content: string
@@ -654,16 +674,25 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                       </ul>
                     )
                   }
-                  const extractTaskText = (child: React.ReactNode): React.ReactNode => {
+                  const extractTaskText = (child: ReactNode): ReactNode => {
                     if (typeof child === "string") return child
-                    if (typeof child === "object" && child !== null && "props" in child) {
-                      const element = child as any
-                      const kids = element.props?.children
+
+                    if (isValidElement(child)) {
+                      // Narrow to a generic props object that includes children
+                      const element = child as ReactElement<{ children?: ReactNode }>
+                      const { children: kids } = element.props
+
                       if (Array.isArray(kids)) {
-                        // Filter out the checkbox input and return the rest
-                        return kids.filter((k: any) => k?.type !== "input")
+                        const filteredKids = kids.filter((k): k is ReactNode => {
+                          if (isValidElement(k)) {
+                            return k.type !== "input"
+                          }
+                          return true
+                        })
+
+                        return <Fragment key={element.key}>{filteredKids}</Fragment>
                       }
-                      return kids || ""
+                      return kids ?? ""
                     }
                     return ""
                   }
@@ -698,38 +727,30 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               li: ({ children, ...props }) => {
                 if (platform === "standard" && children) {
                   let marker = ""
-                  const filterInputsAndMarker = (child: React.ReactNode): React.ReactNode => {
-                    if (typeof child === "object" && child !== null && "type" in child) {
-                      const element = child as any
-                      if (element.type === "input") {
-                        marker = element.props?.checked ? "[X] " : "[ ] "
+
+                  const filterInputsAndMarker = (child: ReactNode): ReactNode => {
+                    if (isTaskElement(child)) {
+                      if (child.type === "input") {
+                        marker = child.props.checked ? "[X] " : "[ ] "
                         return null
                       }
-                      if (element.props && element.props.children) {
-                        if (Array.isArray(element.props.children)) {
-                          return {
-                            ...element,
-                            props: {
-                              ...element.props,
-                              children: element.props.children.map(filterInputsAndMarker),
-                            },
-                          }
-                        } else {
-                          return {
-                            ...element,
-                            props: {
-                              ...element.props,
-                              children: filterInputsAndMarker(element.props.children),
-                            },
-                          }
-                        }
+
+                      if (child.props.children) {
+                        const kids = child.props.children
+                        const newChildren: ReactNode = Array.isArray(kids)
+                          ? kids.map(filterInputsAndMarker)
+                          : filterInputsAndMarker(kids)
+
+                        return cloneElement(child, { ...child.props }, newChildren)
                       }
                     }
                     return child
                   }
+
                   const filteredChildren = Array.isArray(children)
                     ? children.map(filterInputsAndMarker)
                     : filterInputsAndMarker(children)
+
                   return (
                     <li {...props} className="leading-relaxed">
                       {marker}
@@ -737,6 +758,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                     </li>
                   )
                 }
+
                 return (
                   <li {...props} className="leading-relaxed">
                     {children}
