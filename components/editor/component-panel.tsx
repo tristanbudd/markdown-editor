@@ -9,6 +9,7 @@ import {
   ChartArea,
   CircleAlert,
   Code,
+  Diff,
   Footprints,
   Heading1,
   Heading2,
@@ -96,6 +97,7 @@ const iconMap: Record<string, React.ReactNode> = {
   "math-block": <SquareSigma className="h-3.5 w-3.5" />,
   diagram: <ChartArea className="h-3.5 w-3.5" />,
   cube: <Box className="h-3.5 w-3.5" />,
+  diff: <Diff className="h-3.5 w-3.5" />,
 }
 
 const categoryConfig: Record<

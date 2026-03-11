@@ -1,4 +1,14 @@
-import { forwardRef, useMemo, type ElementType, type HTMLAttributes, type ReactNode } from "react"
+import {
+  cloneElement,
+  forwardRef,
+  Fragment,
+  isValidElement,
+  useMemo,
+  type ElementType,
+  type HTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from "react"
 import {
   AlertCircle,
   AlertTriangle,
@@ -15,6 +25,7 @@ import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
 import rehypeRaw from "rehype-raw"
 import rehypeSlug from "rehype-slug"
+import { defListHastHandlers, remarkDefinitionList } from "remark-definition-list"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import type { PluggableList, Plugin } from "unified"
@@ -23,13 +34,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
 
-// Type for React element with props and children
-interface ReactChildWithProps {
-  type?: unknown
-  props?: {
-    children?: React.ReactNode | React.ReactNode[] | string
-    [key: string]: unknown
-  }
+type TaskElementProps = {
+  children?: ReactNode
+  checked?: boolean
+  type?: string
+}
+
+function isTaskElement(node: ReactNode): node is ReactElement<TaskElementProps> {
+  return isValidElement(node)
 }
 
 interface MarkdownPreviewProps {
@@ -399,6 +411,55 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode, parent?: UnistNode) => {
+    if (node.type === "paragraph" && node.children) {
+      const newChildren: UnistNode[] = []
+
+      node.children.forEach((child) => {
+        if (child.type === "text" && child.value) {
+          const lines = child.value.split(/\r?\n/)
+
+          lines.forEach((line) => {
+            const trimmed = line.trim()
+            const match = trimmed.match(/^([\[{])([+-])\s(.+?)\s\2([\]}])$/)
+
+            if (match) {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const [_, open, sign, text, close] = match
+              newChildren.push({
+                type: "paragraph",
+                data: {
+                  hName: "div",
+                  hProperties: {
+                    // Added my-4 to ensure a gap exists even if prose logic fails
+                    className: `${sign === "+" ? "gitlab-inline-diff-add" : "gitlab-inline-diff-del"} my-4 px-2 py-1 rounded border-l-4 block`,
+                  },
+                },
+                children: [{ type: "text", value: text }],
+              })
+            } else if (line.length > 0) {
+              newChildren.push({ type: "text", value: line })
+            }
+          })
+        } else {
+          newChildren.push(child)
+        }
+      })
+
+      if (parent?.children && newChildren.some((child) => child.data?.hName === "div")) {
+        const index = parent.children.indexOf(node)
+        parent.children.splice(index, 1, ...newChildren)
+      }
+    }
+
+    if (node.children) {
+      node.children.slice().forEach((child) => walk(child, node))
+    }
+  }
+  walk(tree)
+}
+
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
   function MarkdownPreview({ content, platform }, ref) {
     const remarkPlugins = useMemo(() => {
@@ -408,6 +469,10 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
         plugins.push(remarkMath)
         plugins.push(remarkEmojis as Plugin)
         plugins.push(remarkGithubAlerts as Plugin)
+        if (platform === "gitlab") {
+          plugins.push(remarkDefinitionList)
+          plugins.push(remarkGitlabInlineDiff as Plugin)
+        }
       }
       return plugins
     }, [platform])
@@ -448,7 +513,10 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
 
     return (
       <ScrollArea className="h-full">
-        <div ref={ref} className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">
+        <div
+          ref={ref}
+          className="prose prose-sm dark:prose-invert mx-auto max-w-none p-6 text-black md:p-8 dark:text-white"
+        >
           <ReactMarkdown
             components={{
               h1: ({ children, ...props }) => (
@@ -589,78 +657,114 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   loading="lazy"
                 />
               ),
-              ul: ({ className, ...props }) => {
+              // TODO: Add support for [~] (strikethrough) on GitLab
+              ul: ({ className, children, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
                 const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
+
+                const listClasses = `md-hover-label !mt-6 mb-4 ml-6 space-y-2 ${
+                  isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"
+                }`
+
                 if (isTaskList && !isPlatformTaskList) {
-                  // Remove input tags and only show text with [ ] or [x] markers
-                  const extractTaskText = (child: React.ReactNode) => {
+                  if (platform === "standard") {
+                    return (
+                      <ul {...props} className={listClasses}>
+                        {children}
+                      </ul>
+                    )
+                  }
+                  const extractTaskText = (child: ReactNode): ReactNode => {
                     if (typeof child === "string") return child
-                    if (typeof child === "object" && child !== null && "props" in child) {
-                      const element = child as ReactChildWithProps
-                      if (Array.isArray(element.props?.children)) {
-                        return element.props.children
-                          .filter((grandchild: React.ReactNode) => {
-                            if (
-                              typeof grandchild === "object" &&
-                              grandchild !== null &&
-                              "type" in grandchild
-                            ) {
-                              const grandElement = grandchild as ReactChildWithProps
-                              return grandElement.type !== "input"
-                            }
-                            return true
-                          })
-                          .map((grandchild: React.ReactNode) => {
-                            if (typeof grandchild === "string") return grandchild
-                            if (
-                              typeof grandchild === "object" &&
-                              grandchild !== null &&
-                              "props" in grandchild
-                            ) {
-                              const grandElement = grandchild as ReactChildWithProps
-                              return grandElement.props?.children || ""
-                            }
-                            return ""
-                          })
-                          .join("")
+
+                    if (isValidElement(child)) {
+                      // Narrow to a generic props object that includes children
+                      const element = child as ReactElement<{ children?: ReactNode }>
+                      const { children: kids } = element.props
+
+                      if (Array.isArray(kids)) {
+                        const filteredKids = kids.filter((k): k is ReactNode => {
+                          if (isValidElement(k)) {
+                            return k.type !== "input"
+                          }
+                          return true
+                        })
+
+                        return <Fragment key={element.key}>{filteredKids}</Fragment>
                       }
-                      if (typeof element.props?.children === "string") {
-                        return element.props.children
-                      }
+                      return kids ?? ""
                     }
                     return ""
                   }
+
                   return (
-                    <ul className="md-hover-label my-2 ml-4 list-disc space-y-1">
-                      {Array.isArray(props.children) ? (
-                        props.children.map((child, idx) => {
-                          const text = extractTaskText(child)
-                          return text.trim() ? (
+                    <ul className={listClasses}>
+                      {Array.isArray(children) ? (
+                        children.map((child, idx) => {
+                          const content = extractTaskText(child)
+                          return content ? (
                             <li key={idx} className="leading-relaxed">
-                              {text}
+                              {content}
                             </li>
                           ) : null
                         })
-                      ) : typeof props.children === "string" ? (
-                        <li className="leading-relaxed">{props.children}</li>
-                      ) : null}
+                      ) : (
+                        <li className="leading-relaxed">{children}</li>
+                      )}
                     </ul>
                   )
                 }
+
                 return (
-                  <ul
-                    {...props}
-                    className={`md-hover-label my-2 ml-4 ${
-                      isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"
-                    } space-y-1`}
-                  />
+                  <ul {...props} className={listClasses}>
+                    {children}
+                  </ul>
                 )
               },
               ol: ({ ...props }) => (
                 <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
               ),
-              li: ({ ...props }) => <li {...props} className="leading-relaxed" />,
+              li: ({ children, ...props }) => {
+                if (platform === "standard" && children) {
+                  let marker = ""
+
+                  const filterInputsAndMarker = (child: ReactNode): ReactNode => {
+                    if (isTaskElement(child)) {
+                      if (child.type === "input") {
+                        marker = child.props.checked ? "[X] " : "[ ] "
+                        return null
+                      }
+
+                      if (child.props.children) {
+                        const kids = child.props.children
+                        const newChildren: ReactNode = Array.isArray(kids)
+                          ? kids.map(filterInputsAndMarker)
+                          : filterInputsAndMarker(kids)
+
+                        return cloneElement(child, { ...child.props }, newChildren)
+                      }
+                    }
+                    return child
+                  }
+
+                  const filteredChildren = Array.isArray(children)
+                    ? children.map(filterInputsAndMarker)
+                    : filterInputsAndMarker(children)
+
+                  return (
+                    <li {...props} className="leading-relaxed">
+                      {marker}
+                      {filteredChildren}
+                    </li>
+                  )
+                }
+
+                return (
+                  <li {...props} className="leading-relaxed">
+                    {children}
+                  </li>
+                )
+              },
               blockquote: ({ className, children, ...props }) => {
                 const classStr = String(className || "")
                 if (classStr.includes("github-alert")) {
@@ -823,9 +927,23 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   />
                 )
               },
+              dl: ({ children }) => (
+                <dl className="border-muted-foreground my-6 space-y-4 border-l-2 pl-4">
+                  {children}
+                </dl>
+              ),
+              dt: ({ children }) => (
+                <dt className="text-foreground mb-1 font-semibold">{children}</dt>
+              ),
+              dd: ({ children }) => <dd className="text-muted-foreground ml-4">{children}</dd>,
             }}
             rehypePlugins={rehypePlugins}
             remarkPlugins={remarkPlugins}
+            remarkRehypeOptions={{
+              handlers: {
+                ...defListHastHandlers,
+              },
+            }}
           >
             {content}
           </ReactMarkdown>

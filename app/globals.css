@@ -187,3 +187,27 @@ main > * {
 .toolbar-scroll::-webkit-scrollbar {
   height: 4px;
 }
+
+/* GitLab inline diff highlighting */
+.gitlab-inline-diff-add {
+  background: #e6ffed;
+  color: #22863a;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+.gitlab-inline-diff-del {
+  background: #ffeef0;
+  color: #b31d28;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+/* Dark mode overrides */
+.dark .gitlab-inline-diff-add {
+  background: #1a2b1a;
+  color: #6bc46b;
+}
+.dark .gitlab-inline-diff-del {
+  background: #2b1a1a;
+  color: #fdaeb7;
+}
