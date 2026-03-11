@@ -64,7 +64,7 @@ Line 1
 Line 2
 
 ## Backslash Escape
-\*escaped asterisk*
+\\\*escaped asterisk*
 
 ## Character Reference
 &amp; &#123;
