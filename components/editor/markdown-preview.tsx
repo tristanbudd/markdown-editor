@@ -24,15 +24,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
 
-// Type for React element with props and children
-interface ReactChildWithProps {
-  type?: unknown
-  props?: {
-    children?: React.ReactNode | React.ReactNode[] | string
-    [key: string]: unknown
-  }
-}
-
 interface MarkdownPreviewProps {
   content: string
   platform: PlatformType
@@ -421,13 +412,13 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
                 data: {
                   hName: "div",
                   hProperties: {
-                    className: sign === "+" ? "gitlab-inline-diff-add" : "gitlab-inline-diff-del",
+                    // Added my-4 to ensure a gap exists even if prose logic fails
+                    className: `${sign === "+" ? "gitlab-inline-diff-add" : "gitlab-inline-diff-del"} my-4 px-2 py-1 rounded border-l-4 block`,
                   },
                 },
                 children: [{ type: "text", value: text }],
               })
-            } else {
-              // Preserve normal text lines
+            } else if (line.length > 0) {
               newChildren.push({ type: "text", value: line })
             }
           })
@@ -436,7 +427,7 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
         }
       })
 
-      if (parent?.children) {
+      if (parent?.children && newChildren.some((child) => child.data?.hName === "div")) {
         const index = parent.children.indexOf(node)
         parent.children.splice(index, 1, ...newChildren)
       }
@@ -446,7 +437,6 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
       node.children.slice().forEach((child) => walk(child, node))
     }
   }
-
   walk(tree)
 }
 
@@ -503,7 +493,10 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
 
     return (
       <ScrollArea className="h-full">
-        <div ref={ref} className="prose prose-sm dark:prose-invert max-w-none p-6 md:p-8">
+        <div
+          ref={ref}
+          className="prose prose-sm dark:prose-invert mx-auto max-w-none p-6 text-black md:p-8 dark:text-white"
+        >
           <ReactMarkdown
             components={{
               h1: ({ children, ...props }) => (
@@ -644,78 +637,112 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   loading="lazy"
                 />
               ),
-              ul: ({ className, ...props }) => {
+              // TODO: Add support for [~] (strikethrough) on GitLab
+              ul: ({ className, children, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
                 const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
+
+                const listClasses = `md-hover-label !mt-6 mb-4 ml-6 space-y-2 ${
+                  isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"
+                }`
+
                 if (isTaskList && !isPlatformTaskList) {
-                  // Remove input tags and only show text with [ ] or [x] markers
-                  const extractTaskText = (child: React.ReactNode) => {
+                  if (platform === "standard") {
+                    return (
+                      <ul {...props} className={listClasses}>
+                        {children}
+                      </ul>
+                    )
+                  }
+                  const extractTaskText = (child: React.ReactNode): React.ReactNode => {
                     if (typeof child === "string") return child
                     if (typeof child === "object" && child !== null && "props" in child) {
-                      const element = child as ReactChildWithProps
-                      if (Array.isArray(element.props?.children)) {
-                        return element.props.children
-                          .filter((grandchild: React.ReactNode) => {
-                            if (
-                              typeof grandchild === "object" &&
-                              grandchild !== null &&
-                              "type" in grandchild
-                            ) {
-                              const grandElement = grandchild as ReactChildWithProps
-                              return grandElement.type !== "input"
-                            }
-                            return true
-                          })
-                          .map((grandchild: React.ReactNode) => {
-                            if (typeof grandchild === "string") return grandchild
-                            if (
-                              typeof grandchild === "object" &&
-                              grandchild !== null &&
-                              "props" in grandchild
-                            ) {
-                              const grandElement = grandchild as ReactChildWithProps
-                              return grandElement.props?.children || ""
-                            }
-                            return ""
-                          })
-                          .join("")
+                      const element = child as any
+                      const kids = element.props?.children
+                      if (Array.isArray(kids)) {
+                        // Filter out the checkbox input and return the rest
+                        return kids.filter((k: any) => k?.type !== "input")
                       }
-                      if (typeof element.props?.children === "string") {
-                        return element.props.children
-                      }
+                      return kids || ""
                     }
                     return ""
                   }
+
                   return (
-                    <ul className="md-hover-label my-2 ml-4 list-disc space-y-1">
-                      {Array.isArray(props.children) ? (
-                        props.children.map((child, idx) => {
-                          const text = extractTaskText(child)
-                          return text.trim() ? (
+                    <ul className={listClasses}>
+                      {Array.isArray(children) ? (
+                        children.map((child, idx) => {
+                          const content = extractTaskText(child)
+                          return content ? (
                             <li key={idx} className="leading-relaxed">
-                              {text}
+                              {content}
                             </li>
                           ) : null
                         })
-                      ) : typeof props.children === "string" ? (
-                        <li className="leading-relaxed">{props.children}</li>
-                      ) : null}
+                      ) : (
+                        <li className="leading-relaxed">{children}</li>
+                      )}
                     </ul>
                   )
                 }
+
                 return (
-                  <ul
-                    {...props}
-                    className={`md-hover-label my-2 ml-4 ${
-                      isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"
-                    } space-y-1`}
-                  />
+                  <ul {...props} className={listClasses}>
+                    {children}
+                  </ul>
                 )
               },
               ol: ({ ...props }) => (
                 <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
               ),
-              li: ({ ...props }) => <li {...props} className="leading-relaxed" />,
+              li: ({ children, ...props }) => {
+                if (platform === "standard" && children) {
+                  let marker = ""
+                  const filterInputsAndMarker = (child: React.ReactNode): React.ReactNode => {
+                    if (typeof child === "object" && child !== null && "type" in child) {
+                      const element = child as any
+                      if (element.type === "input") {
+                        marker = element.props?.checked ? "[X] " : "[ ] "
+                        return null
+                      }
+                      if (element.props && element.props.children) {
+                        if (Array.isArray(element.props.children)) {
+                          return {
+                            ...element,
+                            props: {
+                              ...element.props,
+                              children: element.props.children.map(filterInputsAndMarker),
+                            },
+                          }
+                        } else {
+                          return {
+                            ...element,
+                            props: {
+                              ...element.props,
+                              children: filterInputsAndMarker(element.props.children),
+                            },
+                          }
+                        }
+                      }
+                    }
+                    return child
+                  }
+                  const filteredChildren = Array.isArray(children)
+                    ? children.map(filterInputsAndMarker)
+                    : filterInputsAndMarker(children)
+                  return (
+                    <li {...props} className="leading-relaxed">
+                      {marker}
+                      {filteredChildren}
+                    </li>
+                  )
+                }
+                return (
+                  <li {...props} className="leading-relaxed">
+                    {children}
+                  </li>
+                )
+              },
               blockquote: ({ className, children, ...props }) => {
                 const classStr = String(className || "")
                 if (classStr.includes("github-alert")) {
