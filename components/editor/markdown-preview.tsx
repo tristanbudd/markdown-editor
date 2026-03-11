@@ -15,6 +15,7 @@ import rehypeHighlight from "rehype-highlight"
 import rehypeKatex from "rehype-katex"
 import rehypeRaw from "rehype-raw"
 import rehypeSlug from "rehype-slug"
+import { defListHastHandlers, remarkDefinitionList } from "remark-definition-list"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import type { PluggableList, Plugin } from "unified"
@@ -399,6 +400,56 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode, parent?: UnistNode) => {
+    if (node.type === "paragraph" && node.children) {
+      const newChildren: UnistNode[] = []
+
+      node.children.forEach((child) => {
+        if (child.type === "text" && child.value) {
+          const lines = child.value.split(/\r?\n/)
+
+          lines.forEach((line) => {
+            const trimmed = line.trim()
+            const match = trimmed.match(/^([\[{])([+-])\s(.+?)\s\2([\]}])$/)
+
+            if (match) {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const [_, open, sign, text, close] = match
+              newChildren.push({
+                type: "paragraph",
+                data: {
+                  hName: "div",
+                  hProperties: {
+                    className: sign === "+" ? "gitlab-inline-diff-add" : "gitlab-inline-diff-del",
+                  },
+                },
+                children: [{ type: "text", value: text }],
+              })
+            } else {
+              // Preserve normal text lines
+              newChildren.push({ type: "text", value: line })
+            }
+          })
+        } else {
+          newChildren.push(child)
+        }
+      })
+
+      if (parent?.children) {
+        const index = parent.children.indexOf(node)
+        parent.children.splice(index, 1, ...newChildren)
+      }
+    }
+
+    if (node.children) {
+      node.children.slice().forEach((child) => walk(child, node))
+    }
+  }
+
+  walk(tree)
+}
+
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
   function MarkdownPreview({ content, platform }, ref) {
     const remarkPlugins = useMemo(() => {
@@ -408,6 +459,10 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
         plugins.push(remarkMath)
         plugins.push(remarkEmojis as Plugin)
         plugins.push(remarkGithubAlerts as Plugin)
+        if (platform === "gitlab") {
+          plugins.push(remarkDefinitionList)
+          plugins.push(remarkGitlabInlineDiff as Plugin)
+        }
       }
       return plugins
     }, [platform])
@@ -823,9 +878,23 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   />
                 )
               },
+              dl: ({ children }) => (
+                <dl className="border-muted-foreground my-6 space-y-4 border-l-2 pl-4">
+                  {children}
+                </dl>
+              ),
+              dt: ({ children }) => (
+                <dt className="text-foreground mb-1 font-semibold">{children}</dt>
+              ),
+              dd: ({ children }) => <dd className="text-muted-foreground ml-4">{children}</dd>,
             }}
             rehypePlugins={rehypePlugins}
             remarkPlugins={remarkPlugins}
+            remarkRehypeOptions={{
+              handlers: {
+                ...defListHastHandlers,
+              },
+            }}
           >
             {content}
           </ReactMarkdown>
