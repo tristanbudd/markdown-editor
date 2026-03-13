@@ -20,7 +20,7 @@ export const GITLAB_COMPONENTS: InsertableComponent[] = [
     label: "Task List",
     description: "Insert a task list",
     icon: "list-task",
-    template: "- [ ] Task 1\n- [~] Task 2\n- [x] Task 3\n",
+    template: "- [ ] Task 1\n- [~] Task 2\n- [x] Task 3\n\n",
   },
   {
     id: "table-gl",
@@ -108,13 +108,6 @@ export const GITLAB_COMPONENTS: InsertableComponent[] = [
     template: ">>> [!CAUTION] Danger zone\nYour caution content here.\n\n>>>\n\n",
   },
   {
-    id: "diagram-gl",
-    label: "Diagram",
-    description: "Insert a Mermaid diagram",
-    icon: "diagram",
-    template: "```mermaid\ngraph TD;\n  A-->B;\n  A-->C;\n  B-->D;\n  C-->D;\n```\n",
-  },
-  {
     id: "inline-math-gl",
     label: "Inline Math",
     description: "Insert inline math formula",
@@ -134,5 +127,48 @@ export const GITLAB_COMPONENTS: InsertableComponent[] = [
     description: "Insert an emoji",
     icon: "smile",
     template: ":smile:",
+  },
+  {
+    id: "footnote-gl",
+    label: "Footnote",
+    description: "Insert a footnote",
+    icon: "footnote",
+    template:
+      "Here is a statement that needs a footnote.[^1]\n\n[^1]: This is the footnote content.\n\n",
+  },
+  {
+    id: "toc-gl",
+    label: "Table of Contents",
+    description: "Insert a table of contents",
+    icon: "table",
+    template: "[[_TOC_]]\n\n",
+  },
+  {
+    id: "color-chip-gl",
+    label: "Color Chip",
+    description: "Insert a color chip",
+    icon: "palette",
+    template: "`#FF0000`\n",
+  },
+  {
+    id: "frontmatter",
+    label: "Front Matter",
+    description: "Insert front matter metadata",
+    icon: "metadata",
+    template: "---\ntitle: Title\ndescription: Description\n---\n\n",
+  },
+  {
+    id: "diagram-gl",
+    label: "Diagram",
+    description: "Insert a Mermaid diagram",
+    icon: "diagram",
+    template: "```mermaid\ngraph TD;\n  A-->B;\n  A-->C;\n  B-->D;\n  C-->D;\n```\n",
+  },
+  {
+    id: "plantuml-diagram",
+    label: "PlantUML Diagram",
+    description: "Insert a PlantUML diagram",
+    icon: "diagram",
+    template: "```plantuml\nAlice -> Bob: Hello\n```\n",
   },
 ]

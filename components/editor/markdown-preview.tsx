@@ -26,6 +26,7 @@ import rehypeKatex from "rehype-katex"
 import rehypeRaw from "rehype-raw"
 import rehypeSlug from "rehype-slug"
 import { defListHastHandlers, remarkDefinitionList } from "remark-definition-list"
+import remarkFrontmatter from "remark-frontmatter"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import type { PluggableList, Plugin } from "unified"
@@ -578,6 +579,100 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+const remarkGitlabFrontMatter = () => (tree: UnistNode) => {
+  if (!tree.children?.length) return
+
+  const first = tree.children[0]
+
+  if (first.type !== "yaml" || !first.value) return
+
+  const pairs: { key: string; value: string }[] = []
+
+  first.value.split("\n").forEach((line) => {
+    const m = line.match(/^([^:]+):\s*(.*)$/)
+    if (m) pairs.push({ key: m[1].trim(), value: m[2].trim() })
+  })
+
+  if (!pairs.length) return
+
+  tree.children[0] = {
+    type: "paragraph",
+    data: {
+      hName: "div",
+      hProperties: {
+        className: "gitlab-frontmatter",
+        "data-fm": JSON.stringify(pairs),
+      },
+    },
+    children: [],
+  }
+}
+
+function getNodeText(node: UnistNode): string {
+  if (node.type === "text") return node.value ?? ""
+  return (node.children ?? []).map(getNodeText).join("")
+}
+
+const remarkGitlabTOC = () => (tree: UnistNode) => {
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "")
+
+  tree.children?.forEach((node, idx) => {
+    if (node.type !== "paragraph") return
+
+    const text = normalize(getNodeText(node))
+
+    if (text === "[[_toc_]]" || text === "[toc]" || text === "[[toc]]") {
+      tree.children![idx] = {
+        type: "paragraph",
+        data: {
+          hName: "div",
+          hProperties: { className: "gitlab-toc-placeholder" },
+        },
+        children: [],
+      }
+    }
+  })
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+interface TocEntry {
+  depth: number
+  text: string
+  id: string
+}
+
+function extractHeadings(markdown: string): TocEntry[] {
+  const entries: TocEntry[] = []
+  const slugCount: Record<string, number> = {}
+  let inFence = false
+
+  for (const line of markdown.split("\n")) {
+    if (/^```/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    const m = line.match(/^(#{1,6})\s+(.+)$/)
+    if (!m) continue
+    const depth = m[1].length
+    const raw = m[2].replace(/\s+#+\s*$/, "").trim()
+    const text = raw.replace(/\*{1,2}|_{1,2}|`/g, "")
+    const baseSlug = slugify(text)
+    const count = slugCount[baseSlug] ?? 0
+    slugCount[baseSlug] = count + 1
+    entries.push({ depth, text, id: count === 0 ? baseSlug : `${baseSlug}-${count}` })
+  }
+  return entries
+}
+
 type AlertStyle = { border: string; bg: string; text: string; Icon: typeof Info }
 
 const GITHUB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
@@ -724,6 +819,9 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
         plugins.push(remarkEmojis as Plugin)
         plugins.push(remarkGithubAlerts as Plugin)
       } else if (platform === "gitlab") {
+        plugins.push(remarkFrontmatter)
+        plugins.push(remarkGitlabFrontMatter as Plugin)
+        plugins.push(remarkGitlabTOC as Plugin)
         plugins.push(remarkMath)
         plugins.push(remarkEmojis as Plugin)
         plugins.push(remarkDefinitionList)
@@ -1036,6 +1134,86 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   >
                     {children}
                   </blockquote>
+                )
+              },
+              div: ({ className, children, ...props }) => {
+                const classStr = String(className || "")
+
+                if (classStr.includes("gitlab-frontmatter")) {
+                  const raw = (props as Record<string, unknown>)["data-fm"]
+                  let pairs: { key: string; value: string }[] = []
+                  if (typeof raw === "string") {
+                    try {
+                      pairs = JSON.parse(raw)
+                    } catch {
+                      /* ignore */
+                    }
+                  }
+                  if (!pairs.length) return null
+                  return (
+                    <div className="md-hover-label border-border bg-muted/30 my-4 overflow-hidden rounded-lg border text-sm">
+                      <div className="bg-muted/60 border-border text-muted-foreground border-b px-4 py-2 font-mono text-xs font-semibold tracking-wide uppercase">
+                        Front Matter
+                      </div>
+                      <table className="w-full">
+                        <tbody>
+                          {pairs.map(({ key, value }) => (
+                            <tr key={key} className="border-border border-b last:border-0">
+                              <td className="text-foreground w-1/3 px-4 py-2 align-top font-mono font-semibold">
+                                {key}
+                              </td>
+                              <td className="text-muted-foreground px-4 py-2 align-top font-mono break-all">
+                                {value}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                }
+
+                if (classStr.includes("gitlab-toc-placeholder")) {
+                  const headings = extractHeadings(content)
+                  if (!headings.length) return null
+                  const minDepth = Math.min(...headings.map((h) => h.depth))
+                  return (
+                    <nav
+                      aria-label="Table of Contents"
+                      className="md-hover-label border-border bg-muted/20 my-4 rounded-lg border px-5 py-4"
+                    >
+                      <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+                        Table of Contents
+                      </p>
+                      <ol className="m-0 list-none space-y-1 p-0">
+                        {headings.map((h, i) => (
+                          <li key={i} style={{ paddingLeft: `${(h.depth - minDepth) * 16}px` }}>
+                            <a
+                              className="text-primary hover:text-primary/70 text-sm underline-offset-2 hover:underline"
+                              href={`#${h.id}`}
+                            >
+                              {h.text}
+                            </a>
+                          </li>
+                        ))}
+                      </ol>
+                    </nav>
+                  )
+                }
+
+                return (
+                  <div
+                    {...props}
+                    className={
+                      classStr.includes("gitlab-inline-diff-add")
+                        ? "my-1 block rounded bg-green-500/15 px-2 py-1 text-green-800 dark:text-green-300"
+                        : classStr.includes("gitlab-inline-diff-del")
+                          ? "my-1 block rounded bg-red-500/15 px-2 py-1 text-red-800 dark:text-red-300"
+                          : className || ""
+                    }
+                  >
+                    {children}
+                  </div>
                 )
               },
               hr: () => <hr className="md-hover-label border-border my-8" />,

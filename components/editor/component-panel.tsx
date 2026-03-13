@@ -29,6 +29,7 @@ import {
   Minus,
   NotebookPen,
   OctagonAlert,
+  Palette,
   Quote,
   Search,
   Sigma,
@@ -98,6 +99,7 @@ const iconMap: Record<string, React.ReactNode> = {
   diagram: <ChartArea className="h-3.5 w-3.5" />,
   cube: <Box className="h-3.5 w-3.5" />,
   diff: <Diff className="h-3.5 w-3.5" />,
+  palette: <Palette className="h-3.5 w-3.5" />,
 }
 
 const categoryConfig: Record<
