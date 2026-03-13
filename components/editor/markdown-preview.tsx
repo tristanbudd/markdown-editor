@@ -432,8 +432,7 @@ const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
                 child.children = [
                   {
                     type: "html",
-                    value:
-                      '<input type="checkbox" disabled checked class="task-list-item-checkbox"> ',
+                    value: '<input type="checkbox" disabled class="task-list-item-checkbox"> ',
                   } as UnistNode,
                   {
                     type: "element" as unknown as string,
