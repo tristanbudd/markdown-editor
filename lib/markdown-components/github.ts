@@ -13,7 +13,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     label: "Task List",
     description: "Insert a task list",
     icon: "list-task",
-    template: "- [ ] Task 1\n- [x] Task 2\n",
+    template: "- [ ] Task 1\n- [x] Task 2\n\n",
   },
   {
     id: "emoji",
@@ -35,7 +35,7 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     label: "Footnote",
     description: "Insert a footnote",
     icon: "footnote",
-    template: "Here is a footnote reference[^1].\n\n[^1]: Here is the footnote.\n",
+    template: "Here is a footnote reference[^1].\n\n[^1]: Here is the footnote.\n\n",
   },
   {
     id: "comment",
@@ -128,5 +128,12 @@ export const GITHUB_COMPONENTS: InsertableComponent[] = [
     icon: "cube",
     template:
       "```stl\nsolid cube\n  facet normal 0 0 1\n    outer loop\n      vertex 0 0 0\n      vertex 1 0 0\n      vertex 1 1 0\n    endloop\n  endfacet\nendsolid cube\n```\n",
+  },
+  {
+    id: "color-chip",
+    label: "Color Chip",
+    description: "Insert a color chip",
+    icon: "palette",
+    template: "`#FF0000`\n",
   },
 ]
