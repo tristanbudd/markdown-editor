@@ -345,7 +345,6 @@ const EMOJI_MAP: Record<string, string> = {
   safety_pin: "🧷",
 }
 
-// Use specific types for unist tree nodes if available, or fallback to an interfac
 interface UnistNode {
   type: string
   value?: string
@@ -363,7 +362,6 @@ interface UnistNode {
 const remarkEmojis = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "text" && node.value) {
-      // Avoid replacing inside code blocks if they are parsed as text, though unified stringifies them to code nodes
       node.value = node.value.replace(/:([a-z0-9_+-]+):/g, (match: string, p1: string) => {
         return EMOJI_MAP[p1] || match
       })
@@ -637,9 +635,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               ),
               code: ({ className, children, ...props }) => {
                 const isInline = !className
-                // Only string children are expected for inline code
                 const codeValue = Array.isArray(children) ? children.join("") : children
-                // Regex for HEX, RGB, HSL
                 const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
                 const rgbRegex =
                   /^rgb\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/
@@ -724,7 +720,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                     if (typeof child === "string") return child
 
                     if (isValidElement(child)) {
-                      // Narrow to a generic props object that includes children
                       const element = child as ReactElement<{ children?: ReactNode }>
                       const { children: kids } = element.props
 
