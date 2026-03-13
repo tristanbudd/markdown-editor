@@ -351,8 +351,10 @@ interface UnistNode {
   value?: string
   children?: UnistNode[]
   data?: {
+    hName?: string
     hProperties?: {
       className?: string
+      [key: string]: unknown
     }
     [key: string]: unknown
   }
@@ -403,6 +405,51 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
           }
         }
       }
+    }
+    if (node.children) {
+      node.children.forEach(walk)
+    }
+  }
+  walk(tree)
+}
+
+const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode) => {
+    if (node.type === "list" && node.children) {
+      node.children.forEach((listItem) => {
+        if (listItem.type === "listItem" && listItem.children) {
+          listItem.children.forEach((child) => {
+            if (child.type === "paragraph" && child.children && child.children.length > 0) {
+              const first = child.children[0]
+              if (first.type === "text" && first.value && /^\[~\]\s/.test(first.value)) {
+                const labelText = first.value.replace(/^\[~\]\s/, "")
+                const restSiblings = child.children.slice(1)
+
+                listItem.data = listItem.data || {}
+                listItem.data.hProperties = {
+                  ...(listItem.data.hProperties || {}),
+                  className: "task-list-item",
+                }
+
+                child.children = [
+                  {
+                    type: "html",
+                    value:
+                      '<input type="checkbox" disabled checked class="task-list-item-checkbox"> ',
+                  } as UnistNode,
+                  {
+                    type: "element" as unknown as string,
+                    data: {
+                      hName: "del",
+                    },
+                    children: [{ type: "text", value: labelText }, ...restSiblings],
+                  } as UnistNode,
+                ]
+              }
+            }
+          })
+        }
+      })
     }
     if (node.children) {
       node.children.forEach(walk)
@@ -471,6 +518,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
         if (platform === "gitlab") {
           plugins.push(remarkDefinitionList)
           plugins.push(remarkGitlabInlineDiff as Plugin)
+          plugins.push(remarkGitlabTaskTilde as Plugin)
         }
       }
       return plugins
@@ -656,7 +704,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   loading="lazy"
                 />
               ),
-              // TODO: Add support for [~] (strikethrough) on GitLab
               ul: ({ className, children, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
                 const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
