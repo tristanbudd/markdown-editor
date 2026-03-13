@@ -55,6 +55,14 @@ interface HeadingProps extends HTMLAttributes<HTMLElement> {
   children: ReactNode
 }
 
+interface HastNode {
+  type: string
+  tagName?: string
+  value?: string
+  properties?: Record<string, unknown>
+  children?: HastNode[]
+}
+
 const EMOJI_MAP: Record<string, string> = {
   smile: "😄",
   laughing: "😆",
@@ -351,29 +359,113 @@ interface UnistNode {
   children?: UnistNode[]
   data?: {
     hName?: string
-    hProperties?: {
-      className?: string
-      [key: string]: unknown
-    }
+    hProperties?: { className?: string; [key: string]: unknown }
     [key: string]: unknown
   }
 }
 
+type GitlabAlertType = "note" | "tip" | "important" | "warning" | "caution"
+const GITLAB_ALERT_TYPES = ["note", "tip", "important", "warning", "caution"] as const
+
+function toGitlabAlertType(raw: string): GitlabAlertType {
+  const lower = raw.toLowerCase()
+  return (GITLAB_ALERT_TYPES as readonly string[]).includes(lower)
+    ? (lower as GitlabAlertType)
+    : "note"
+}
+
+const ALERT_HEADER_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(.*)/i
+
 const remarkEmojis = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
-    if (node.type === "text" && node.value) {
-      node.value = node.value.replace(/:([a-z0-9_+-]+):/g, (match: string, p1: string) => {
-        return EMOJI_MAP[p1] || match
-      })
-    }
-    if (node.children) {
-      node.children.forEach(walk)
-    }
+    if (node.type === "text" && node.value)
+      node.value = node.value.replace(
+        /:([a-z0-9_+-]+):/g,
+        (m: string, p1: string) => EMOJI_MAP[p1] || m
+      )
+    node.children?.forEach(walk)
   }
   walk(tree)
 }
 
 const remarkGithubAlerts = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode) => {
+    if (node.type === "blockquote" && node.children?.length) {
+      const first = node.children[0]
+      if (first.type === "paragraph" && first.children?.length) {
+        const txt = first.children[0]
+        if (txt.type === "text" && txt.value) {
+          const m = txt.value.match(
+            /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s*\n|\s+|$)([\s\S]*)/i
+          )
+          if (m) {
+            node.data = node.data || {}
+            node.data.hProperties = {
+              ...(node.data.hProperties || {}),
+              className: `github-alert github-alert-${m[1].toLowerCase()}`,
+            }
+            if (m[2]) txt.value = m[2]
+            else first.children.shift()
+          }
+        }
+      }
+    }
+    node.children?.forEach(walk)
+  }
+  walk(tree)
+}
+
+const remarkGitlabTripleChevronAlerts = () => (tree: UnistNode) => {
+  const walk = (node: UnistNode) => {
+    if (node.type === "blockquote" && node.children?.length) {
+      const r1 = node.children.filter((c) => !(c.type === "text" && !c.value?.trim()))
+      if (r1.length === 1 && r1[0].type === "blockquote") {
+        const r2 = (r1[0].children || []).filter((c) => !(c.type === "text" && !c.value?.trim()))
+        if (r2.length === 1 && r2[0].type === "blockquote") {
+          const inner = r2[0]
+          const innerChildren = inner.children || []
+          const firstChild = innerChildren[0]
+          if (firstChild?.type === "paragraph" && firstChild.children?.length) {
+            const txt = firstChild.children[0]
+            if (txt.type === "text" && txt.value) {
+              const m = txt.value.match(
+                /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s+(.*?))?(?:\s*\n([\s\S]*))?$/i
+              )
+              if (m) {
+                const alertType = toGitlabAlertType(m[1])
+                const inlineTitle = (m[2] || "").trim()
+                const remainder = (m[3] || "").trim()
+
+                node.data = node.data || {}
+                node.data.hProperties = {
+                  ...(node.data.hProperties || {}),
+                  className: `gitlab-alert gitlab-alert-${alertType}`,
+                  "data-title": inlineTitle,
+                }
+
+                if (remainder) {
+                  txt.value = remainder
+                  node.children = innerChildren
+                } else {
+                  firstChild.children.shift()
+                  const remaining = firstChild.children.length
+                    ? [firstChild, ...innerChildren.slice(1)]
+                    : innerChildren.slice(1)
+                  node.children = remaining.length ? remaining : []
+                }
+                return
+              }
+            }
+          }
+        }
+      }
+    }
+    node.children?.forEach(walk)
+  }
+  walk(tree)
+}
+
+const remarkGitlabSingleChevronAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children && node.children.length > 0) {
       const firstChild = node.children[0]
@@ -388,12 +480,12 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
             /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s*\n|\s+|$)([\s\S]*)/i
           )
           if (match) {
-            const alertType = match[1].toLowerCase()
+            const alertType = toGitlabAlertType(match[1])
             const remainingText = match[2]
 
             node.data = node.data || {}
             node.data.hProperties = node.data.hProperties || {}
-            node.data.hProperties.className = `github-alert github-alert-${alertType}`
+            node.data.hProperties.className = `gitlab-alert gitlab-alert-${alertType}`
 
             if (remainingText) {
               firstTextNode.value = remainingText
@@ -413,22 +505,20 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
 
 const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
-    if (node.type === "list" && node.children) {
-      node.children.forEach((listItem) => {
-        if (listItem.type === "listItem" && listItem.children) {
-          listItem.children.forEach((child) => {
-            if (child.type === "paragraph" && child.children && child.children.length > 0) {
+    if (node.type === "list") {
+      node.children?.forEach((item) => {
+        if (item.type === "listItem") {
+          item.children?.forEach((child) => {
+            if (child.type === "paragraph" && child.children?.length) {
               const first = child.children[0]
               if (first.type === "text" && first.value && /^\[~\]\s/.test(first.value)) {
                 const labelText = first.value.replace(/^\[~\]\s/, "")
-                const restSiblings = child.children.slice(1)
-
-                listItem.data = listItem.data || {}
-                listItem.data.hProperties = {
-                  ...(listItem.data.hProperties || {}),
+                const rest = child.children.slice(1)
+                item.data = item.data || {}
+                item.data.hProperties = {
+                  ...(item.data.hProperties || {}),
                   className: "task-list-item",
                 }
-
                 child.children = [
                   {
                     type: "html",
@@ -436,10 +526,8 @@ const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
                   } as UnistNode,
                   {
                     type: "element" as unknown as string,
-                    data: {
-                      hName: "del",
-                    },
-                    children: [{ type: "text", value: labelText }, ...restSiblings],
+                    data: { hName: "del" },
+                    children: [{ type: "text", value: labelText }, ...rest],
                   } as UnistNode,
                 ]
               }
@@ -448,9 +536,7 @@ const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
         }
       })
     }
-    if (node.children) {
-      node.children.forEach(walk)
-    }
+    node.children?.forEach(walk)
   }
   walk(tree)
 }
@@ -459,18 +545,12 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
   const walk = (node: UnistNode, parent?: UnistNode) => {
     if (node.type === "paragraph" && node.children) {
       const newChildren: UnistNode[] = []
-
       node.children.forEach((child) => {
         if (child.type === "text" && child.value) {
-          const lines = child.value.split(/\r?\n/)
-
-          lines.forEach((line) => {
-            const trimmed = line.trim()
-            const match = trimmed.match(/^([\[{])([+-])\s(.+?)\s\2([\]}])$/)
-
-            if (match) {
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const [_, open, sign, text, close] = match
+          child.value.split(/\r?\n/).forEach((line) => {
+            const m = line.trim().match(/^([\[{])([+-])\s(.+?)\s\2([\]}])$/)
+            if (m) {
+              const [_, _o, sign, text] = m
               newChildren.push({
                 type: "paragraph",
                 data: {
@@ -489,18 +569,149 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
           newChildren.push(child)
         }
       })
-
-      if (parent?.children && newChildren.some((child) => child.data?.hName === "div")) {
-        const index = parent.children.indexOf(node)
-        parent.children.splice(index, 1, ...newChildren)
+      if (parent?.children && newChildren.some((c) => c.data?.hName === "div")) {
+        parent.children.splice(parent.children.indexOf(node), 1, ...newChildren)
       }
     }
-
-    if (node.children) {
-      node.children.slice().forEach((child) => walk(child, node))
-    }
+    node.children?.slice().forEach((c) => walk(c, node))
   }
   walk(tree)
+}
+
+type AlertStyle = { border: string; bg: string; text: string; Icon: typeof Info }
+
+const GITHUB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
+  note: { border: "border-blue-500", bg: "bg-blue-500/10", text: "text-blue-500", Icon: Info },
+  tip: {
+    border: "border-green-500",
+    bg: "bg-green-500/10",
+    text: "text-green-500",
+    Icon: Lightbulb,
+  },
+  important: {
+    border: "border-purple-500",
+    bg: "bg-purple-500/10",
+    text: "text-purple-500",
+    Icon: AlertCircle,
+  },
+  warning: {
+    border: "border-yellow-500",
+    bg: "bg-yellow-500/10",
+    text: "text-yellow-500",
+    Icon: AlertTriangle,
+  },
+  caution: { border: "border-red-500", bg: "bg-red-500/10", text: "text-red-500", Icon: XOctagon },
+}
+
+const GITLAB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
+  note: {
+    border: "border-blue-700",
+    bg: "bg-transparent",
+    text: "text-blue-700   dark:text-blue-400",
+    Icon: Info,
+  },
+  tip: {
+    border: "border-green-700",
+    bg: "bg-transparent",
+    text: "text-green-700  dark:text-green-400",
+    Icon: Lightbulb,
+  },
+  important: {
+    border: "border-purple-700",
+    bg: "bg-transparent",
+    text: "text-purple-700 dark:text-purple-400",
+    Icon: AlertCircle,
+  },
+  warning: {
+    border: "border-yellow-700",
+    bg: "bg-transparent",
+    text: "text-yellow-700 dark:text-yellow-400",
+    Icon: AlertTriangle,
+  },
+  caution: {
+    border: "border-red-700",
+    bg: "bg-transparent",
+    text: "text-red-700    dark:text-red-400",
+    Icon: XOctagon,
+  },
+}
+
+function renderAlert(
+  alertType: GitlabAlertType,
+  title: string,
+  body: ReactNode,
+  alertPlatform: "github" | "gitlab",
+  extraProps?: Record<string, unknown>
+) {
+  const styles = alertPlatform === "gitlab" ? GITLAB_ALERT_STYLES : GITHUB_ALERT_STYLES
+  const { border, bg, text, Icon } = styles[alertType]
+  const displayTitle = title && title !== alertType ? title : alertType
+  const padding = alertPlatform === "gitlab" ? "px-4 py-1" : "px-4 py-3"
+  const titleGap = alertPlatform === "gitlab" ? "mb-0.5" : "mb-2"
+  return (
+    <blockquote
+      {...(extraProps || {})}
+      className={`md-hover-label my-4 border-l-4 ${padding} ${border} ${bg} rounded-r-lg`}
+    >
+      <div className={`${titleGap} flex items-center gap-2 font-semibold ${text}`}>
+        {alertPlatform === "github" && <Icon className="h-4 w-4" />}
+        <span className="capitalize">{displayTitle}</span>
+      </div>
+      <div className="text-foreground/80">{body}</div>
+    </blockquote>
+  )
+}
+
+function getHastText(node: HastNode): string {
+  if (node.type === "text") return node.value ?? ""
+  return (node.children ?? []).map(getHastText).join("")
+}
+
+function parseFencedAlertFromHast(
+  node: HastNode
+): { alertType: GitlabAlertType; title: string; bodyText: string } | null {
+  if (node.tagName !== "blockquote") return null
+  const cls = String((node.properties?.className as string[] | string) ?? "")
+  if (cls.includes("gitlab-alert") || cls.includes("github-alert")) return null
+
+  const realChildren = (node.children ?? []).filter(
+    (c) => !(c.type === "text" && c.value?.trim() === "")
+  )
+  if (realChildren.length !== 1 || realChildren[0].tagName !== "blockquote") return null
+
+  const mid = realChildren[0]
+  const midCls = String((mid.properties?.className as string[] | string) ?? "")
+  if (midCls.includes("gitlab-alert") || midCls.includes("github-alert")) return null
+
+  const midReal = (mid.children ?? []).filter((c) => !(c.type === "text" && c.value?.trim() === ""))
+  if (midReal.length !== 1 || midReal[0].tagName !== "blockquote") return null
+
+  const inner = midReal[0]
+  const innerCls = String((inner.properties?.className as string[] | string) ?? "")
+  if (innerCls.includes("gitlab-alert") || innerCls.includes("github-alert")) return null
+
+  const fullText = getHastText(inner).trim()
+  if (!fullText) return null
+
+  const firstLine = fullText.split("\n")[0].trim()
+  const m = firstLine.match(ALERT_HEADER_RE)
+  if (!m) return null
+
+  return {
+    alertType: toGitlabAlertType(m[1]),
+    title: m[2].trim(),
+    bodyText: fullText.split("\n").slice(1).join("\n").trim(),
+  }
+}
+
+function isEmptyTripleFenceHast(node: HastNode): boolean {
+  if (node.tagName !== "blockquote") return false
+  const r1 = (node.children ?? []).filter((c) => !(c.type === "text" && c.value?.trim() === ""))
+  if (r1.length !== 1 || r1[0].tagName !== "blockquote") return false
+  const r2 = (r1[0].children ?? []).filter((c) => !(c.type === "text" && c.value?.trim() === ""))
+  if (r2.length !== 1 || r2[0].tagName !== "blockquote") return false
+  const r3 = (r2[0].children ?? []).filter((c) => !(c.type === "text" && c.value?.trim() === ""))
+  return r3.length === 0
 }
 
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
@@ -508,15 +719,18 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
     const remarkPlugins = useMemo(() => {
       const plugins: PluggableList = []
       plugins.push(remarkGfm)
-      if (platform === "github" || platform === "gitlab") {
+      if (platform === "github") {
         plugins.push(remarkMath)
         plugins.push(remarkEmojis as Plugin)
         plugins.push(remarkGithubAlerts as Plugin)
-        if (platform === "gitlab") {
-          plugins.push(remarkDefinitionList)
-          plugins.push(remarkGitlabInlineDiff as Plugin)
-          plugins.push(remarkGitlabTaskTilde as Plugin)
-        }
+      } else if (platform === "gitlab") {
+        plugins.push(remarkMath)
+        plugins.push(remarkEmojis as Plugin)
+        plugins.push(remarkDefinitionList)
+        plugins.push(remarkGitlabInlineDiff as Plugin)
+        plugins.push(remarkGitlabTaskTilde as Plugin)
+        plugins.push(remarkGitlabTripleChevronAlerts as Plugin)
+        plugins.push(remarkGitlabSingleChevronAlerts as Plugin)
       }
       return plugins
     }, [platform])
@@ -538,7 +752,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
 
     const Heading = ({ as: Tag = "h2", children, className = "", id, ...props }: HeadingProps) => {
       const showAnchor = platform === "github" && id
-
       return (
         <Tag {...props} className={`group relative ${className}`} id={id}>
           {showAnchor && (
@@ -635,20 +848,14 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               code: ({ className, children, ...props }) => {
                 const isInline = !className
                 const codeValue = Array.isArray(children) ? children.join("") : children
-                const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
-                const rgbRegex =
-                  /^rgb\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/
-                const hslRegex =
-                  /^hsl\s*\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})%\s*,\s*([0-9]{1,3})%\s*\)$/
+                const hexRe = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+                const rgbRe = /^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/
+                const hslRe = /^hsl\s*\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/
                 let color = null
                 if (typeof codeValue === "string") {
-                  if (hexRegex.test(codeValue)) {
-                    color = codeValue
-                  } else if (rgbRegex.test(codeValue)) {
-                    color = codeValue
-                  } else if (hslRegex.test(codeValue)) {
-                    color = codeValue
-                  }
+                  if (hexRe.test(codeValue)) color = codeValue
+                  else if (rgbRe.test(codeValue)) color = codeValue
+                  else if (hslRe.test(codeValue)) color = codeValue
                 }
                 if (isInline) {
                   return (
@@ -702,49 +909,37 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               ul: ({ className, children, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
                 const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
-
-                const listClasses = `md-hover-label !mt-6 mb-4 ml-6 space-y-2 ${
-                  isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"
-                }`
-
+                const listClasses = `md-hover-label !mt-6 mb-4 ml-6 space-y-2 ${isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"}`
                 if (isTaskList && !isPlatformTaskList) {
-                  if (platform === "standard") {
+                  if (platform === "standard")
                     return (
                       <ul {...props} className={listClasses}>
                         {children}
                       </ul>
                     )
-                  }
                   const extractTaskText = (child: ReactNode): ReactNode => {
                     if (typeof child === "string") return child
-
                     if (isValidElement(child)) {
-                      const element = child as ReactElement<{ children?: ReactNode }>
-                      const { children: kids } = element.props
-
+                      const el = child as ReactElement<{ children?: ReactNode }>
+                      const kids = el.props.children
                       if (Array.isArray(kids)) {
-                        const filteredKids = kids.filter((k): k is ReactNode => {
-                          if (isValidElement(k)) {
-                            return k.type !== "input"
-                          }
-                          return true
-                        })
-
-                        return <Fragment key={element.key}>{filteredKids}</Fragment>
+                        const filtered = kids.filter((k): k is ReactNode =>
+                          isValidElement(k) ? k.type !== "input" : true
+                        )
+                        return <Fragment key={el.key}>{filtered}</Fragment>
                       }
                       return kids ?? ""
                     }
                     return ""
                   }
-
                   return (
                     <ul className={listClasses}>
                       {Array.isArray(children) ? (
                         children.map((child, idx) => {
-                          const content = extractTaskText(child)
-                          return content ? (
+                          const c = extractTaskText(child)
+                          return c ? (
                             <li key={idx} className="leading-relaxed">
-                              {content}
+                              {c}
                             </li>
                           ) : null
                         })
@@ -754,7 +949,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                     </ul>
                   )
                 }
-
                 return (
                   <ul {...props} className={listClasses}>
                     {children}
@@ -767,91 +961,72 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               li: ({ children, ...props }) => {
                 if (platform === "standard" && children) {
                   let marker = ""
-
-                  const filterInputsAndMarker = (child: ReactNode): ReactNode => {
+                  const filter = (child: ReactNode): ReactNode => {
                     if (isTaskElement(child)) {
                       if (child.type === "input") {
                         marker = child.props.checked ? "[X] " : "[ ] "
                         return null
                       }
-
                       if (child.props.children) {
                         const kids = child.props.children
-                        const newChildren: ReactNode = Array.isArray(kids)
-                          ? kids.map(filterInputsAndMarker)
-                          : filterInputsAndMarker(kids)
-
-                        return cloneElement(child, { ...child.props }, newChildren)
+                        return cloneElement(
+                          child,
+                          { ...child.props },
+                          Array.isArray(kids) ? kids.map(filter) : filter(kids)
+                        )
                       }
                     }
                     return child
                   }
-
-                  const filteredChildren = Array.isArray(children)
-                    ? children.map(filterInputsAndMarker)
-                    : filterInputsAndMarker(children)
-
+                  const filtered = Array.isArray(children) ? children.map(filter) : filter(children)
                   return (
                     <li {...props} className="leading-relaxed">
                       {marker}
-                      {filteredChildren}
+                      {filtered}
                     </li>
                   )
                 }
-
                 return (
                   <li {...props} className="leading-relaxed">
                     {children}
                   </li>
                 )
               },
-              blockquote: ({ className, children, ...props }) => {
+              blockquote: ({ className, children, node, ...props }) => {
                 const classStr = String(className || "")
+                const hastNode = node as unknown as HastNode | undefined
+
+                if (classStr.includes("gitlab-alert")) {
+                  let alertType: GitlabAlertType = "note"
+                  for (const t of GITLAB_ALERT_TYPES) {
+                    if (classStr.includes(`gitlab-alert-${t}`)) {
+                      alertType = t
+                      break
+                    }
+                  }
+                  const rawTitle = (props as Record<string, unknown>)["data-title"]
+                  const title = typeof rawTitle === "string" ? rawTitle : ""
+                  return renderAlert(alertType, title || alertType, children, "gitlab", props)
+                }
+
                 if (classStr.includes("github-alert")) {
-                  let alertType: "note" | "tip" | "important" | "warning" | "caution" = "note"
+                  let alertType: GitlabAlertType = "note"
                   if (classStr.includes("github-alert-tip")) alertType = "tip"
                   else if (classStr.includes("github-alert-important")) alertType = "important"
                   else if (classStr.includes("github-alert-warning")) alertType = "warning"
                   else if (classStr.includes("github-alert-caution")) alertType = "caution"
+                  return renderAlert(alertType, alertType, children, "github", props)
+                }
 
-                  const Icon = {
-                    note: Info,
-                    tip: Lightbulb,
-                    important: AlertCircle,
-                    warning: AlertTriangle,
-                    caution: XOctagon,
-                  }[alertType]
+                if (platform === "gitlab" && hastNode) {
+                  if (isEmptyTripleFenceHast(hastNode)) return null
 
-                  const colorClass = {
-                    note: "border-blue-500 [&>p]:text-foreground bg-blue-500/10",
-                    tip: "border-green-500 [&>p]:text-foreground bg-green-500/10",
-                    important: "border-purple-500 [&>p]:text-foreground bg-purple-500/10",
-                    warning: "border-yellow-500 [&>p]:text-foreground bg-yellow-500/10",
-                    caution: "border-red-500 [&>p]:text-foreground bg-red-500/10",
-                  }[alertType]
-
-                  const textColorClass = {
-                    note: "text-blue-500",
-                    tip: "text-green-500",
-                    important: "text-purple-500",
-                    warning: "text-yellow-500",
-                    caution: "text-red-500",
-                  }[alertType]
-
-                  return (
-                    <blockquote
-                      {...props}
-                      className={`md-hover-label my-4 border-l-4 px-4 py-3 ${colorClass} rounded-r-lg ${className}`}
-                    >
-                      <div
-                        className={`mb-2 flex items-center gap-2 font-semibold ${textColorClass}`}
-                      >
-                        {Icon && <Icon className="h-4 w-4" />}
-                        <span className="capitalize">{alertType}</span>
-                      </div>
-                      <div className="text-foreground/80">{children}</div>
-                    </blockquote>
-                  )
+                  const parsed = parseFencedAlertFromHast(hastNode)
+                  if (parsed) {
+                    const { alertType, title, bodyText } = parsed
+                    const body = bodyText ? <p>{bodyText}</p> : null
+                    return renderAlert(alertType, title, body, "gitlab", props)
+                  }
                 }
 
                 return (
@@ -866,17 +1041,14 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               hr: () => <hr className="md-hover-label border-border my-8" />,
               pre: ({ className, children, node, ...props }) => {
                 let lang = ""
-                const firstChild = node?.children?.[0]
-                if (firstChild?.type === "element" && firstChild.tagName === "code") {
-                  const childClass = firstChild.properties?.className || []
-                  const match = /language-(\w+)/.exec(
-                    Array.isArray(childClass)
-                      ? childClass.map(String).join(" ")
-                      : String(childClass)
+                const fc = node?.children?.[0]
+                if (fc?.type === "element" && fc.tagName === "code") {
+                  const cc = fc.properties?.className || []
+                  const m = /language-(\w+)/.exec(
+                    Array.isArray(cc) ? cc.map(String).join(" ") : String(cc)
                   )
-                  if (match) lang = match[1].toLowerCase()
+                  if (m) lang = m[1].toLowerCase()
                 }
-
                 if (
                   lang &&
                   ["mermaid", "geojson", "topojson", "stl"].includes(lang) &&
@@ -884,9 +1056,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 ) {
                   return (
                     <div
-                      className={`md-hover-label border-border bg-muted/10 my-4 overflow-hidden rounded-lg border ${
-                        className || ""
-                      }`}
+                      className={`md-hover-label border-border bg-muted/10 my-4 overflow-hidden rounded-lg border ${className || ""}`}
                     >
                       <div className="bg-muted text-muted-foreground border-border flex items-center gap-2 border-b px-4 py-2 text-xs font-semibold uppercase">
                         {lang === "mermaid" ? (
@@ -904,7 +1074,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                     </div>
                   )
                 }
-
                 return (
                   <pre
                     {...props}
@@ -924,8 +1093,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 <sup {...props} className="md-hover-label-inline text-primary text-xs" />
               ),
               table: ({ ...props }) => {
-                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
-                if (!isPlatformTable) return props.children
+                if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return (
                   <div className="md-hover-label my-6 w-full overflow-y-auto">
                     <table {...props} className="w-full overflow-hidden rounded-lg" />
@@ -933,23 +1101,19 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 )
               },
               thead: ({ ...props }) => {
-                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
-                if (!isPlatformTable) return props.children
+                if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return <thead {...props} className="bg-muted/50 border-b" />
               },
               tbody: ({ ...props }) => {
-                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
-                if (!isPlatformTable) return props.children
+                if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return <tbody {...props} className="divide-border divide-y" />
               },
               tr: ({ ...props }) => {
-                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
-                if (!isPlatformTable) return props.children
+                if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return <tr {...props} className="hover:bg-muted/30 transition-colors" />
               },
               th: ({ ...props }) => {
-                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
-                if (!isPlatformTable) return props.children
+                if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return (
                   <th
                     {...props}
@@ -958,8 +1122,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 )
               },
               td: ({ ...props }) => {
-                const isPlatformTable = ["github", "gitlab", "bitbucket"].includes(platform)
-                if (!isPlatformTable) return props.children
+                if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return (
                   <td
                     {...props}
@@ -979,11 +1142,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
             }}
             rehypePlugins={rehypePlugins}
             remarkPlugins={remarkPlugins}
-            remarkRehypeOptions={{
-              handlers: {
-                ...defListHastHandlers,
-              },
-            }}
+            remarkRehypeOptions={{ handlers: { ...defListHastHandlers } }}
           >
             {content}
           </ReactMarkdown>
