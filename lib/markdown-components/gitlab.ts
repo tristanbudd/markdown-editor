@@ -6,7 +6,7 @@ export const GITLAB_COMPONENTS: InsertableComponent[] = [
     label: "Inline Diff",
     description: "Insert an inline diff",
     icon: "diff",
-    template: "{+ added feature +}\n{- removed feature -}\n",
+    template: "{+ added feature +}\n{- removed feature -}\n\n",
   },
   {
     id: "description-list",

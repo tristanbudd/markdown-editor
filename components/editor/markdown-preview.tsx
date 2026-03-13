@@ -432,8 +432,7 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
                 data: {
                   hName: "div",
                   hProperties: {
-                    // Added my-4 to ensure a gap exists even if prose logic fails
-                    className: `${sign === "+" ? "gitlab-inline-diff-add" : "gitlab-inline-diff-del"} my-4 px-2 py-1 rounded border-l-4 block`,
+                    className: `${sign === "+" ? "gitlab-inline-diff-add" : "gitlab-inline-diff-del"} my-1 px-2 py-1 rounded block`,
                   },
                 },
                 children: [{ type: "text", value: text }],
