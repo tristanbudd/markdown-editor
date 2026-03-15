@@ -156,6 +156,60 @@ export function MarkdownEditor() {
     URL.revokeObjectURL(url)
   }, [markdown])
 
+  const exportHTML = () => {
+    if (!previewRef.current) return
+
+    const styleSheets = Array.from(document.styleSheets)
+      .map((sheet) => {
+        try {
+          return Array.from(sheet.cssRules)
+            .map((r) => r.cssText)
+            .join("\n")
+        } catch {
+          return ""
+        }
+      })
+      .join("\n")
+
+    const htmlContent = previewRef.current.outerHTML
+
+    const doc = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+${styleSheets}
+body {
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px;
+  min-height: 100vh;
+}
+.export-wrapper {
+  width: 100%;
+  max-width: 720px;
+}
+</style>
+</head>
+<body class="bg-background text-foreground">
+  <div class="export-wrapper">
+    ${htmlContent}
+  </div>
+</body>
+</html>
+`
+
+    const blob = new Blob([doc], { type: "text/html" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "document.html"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768 && viewMode === "split") {
@@ -175,6 +229,7 @@ export function MarkdownEditor() {
         lineCount={stats.lines}
         viewMode={viewMode}
         wordCount={stats.words}
+        onExportHTML={exportHTML}
         onExportMarkdown={exportMarkdown}
         onExportRaw={exportRaw}
         onImportFile={handleImportFile}
