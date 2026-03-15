@@ -613,7 +613,7 @@ function getNodeText(node: UnistNode): string {
   return (node.children ?? []).map(getNodeText).join("")
 }
 
-const remarkGitlabTOC = () => (tree: UnistNode) => {
+const remarkTOC = () => (tree: UnistNode) => {
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "")
 
   tree.children?.forEach((node, idx) => {
@@ -626,7 +626,7 @@ const remarkGitlabTOC = () => (tree: UnistNode) => {
         type: "paragraph",
         data: {
           hName: "div",
-          hProperties: { className: "gitlab-toc-placeholder" },
+          hProperties: { className: "toc-placeholder" },
         },
         children: [],
       }
@@ -821,14 +821,16 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       } else if (platform === "gitlab") {
         plugins.push(remarkFrontmatter)
         plugins.push(remarkGitlabFrontMatter as Plugin)
-        plugins.push(remarkGitlabTOC as Plugin)
-        plugins.push(remarkMath)
+        plugins.push(remarkTOC as Plugin)
+        plugins.push(remarkMath as Plugin)
         plugins.push(remarkEmojis as Plugin)
         plugins.push(remarkDefinitionList)
         plugins.push(remarkGitlabInlineDiff as Plugin)
         plugins.push(remarkGitlabTaskTilde as Plugin)
         plugins.push(remarkGitlabTripleChevronAlerts as Plugin)
         plugins.push(remarkGitlabSingleChevronAlerts as Plugin)
+      } else if (platform === "bitbucket") {
+        plugins.push(remarkTOC as Plugin)
       }
       return plugins
     }, [platform])
@@ -1173,7 +1175,10 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   )
                 }
 
-                if (classStr.includes("gitlab-toc-placeholder")) {
+                if (
+                  classStr.includes("toc-placeholder") &&
+                  (platform === "gitlab" || platform === "bitbucket")
+                ) {
                   const headings = extractHeadings(content)
                   if (!headings.length) return null
                   const minDepth = Math.min(...headings.map((h) => h.depth))
