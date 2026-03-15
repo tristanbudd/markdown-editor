@@ -210,6 +210,50 @@ body {
     URL.revokeObjectURL(url)
   }
 
+  const exportPDF = useCallback(() => {
+    if (!previewRef.current) return
+
+    const content = previewRef.current.innerHTML
+    const win = window.open("", "_blank")
+
+    win!.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>Export PDF</title>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  body {
+    font-family: system-ui;
+    padding: 40px;
+  }
+</style>
+
+</head>
+<body>
+
+<div class="prose max-w-none">
+${content}
+</div>
+
+<script>
+  window.onload = () => {
+    setTimeout(() => {
+      window.print()
+    }, 200)
+  }
+</script>
+
+</body>
+</html>
+`)
+
+    win!.document.close()
+  }, [])
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768 && viewMode === "split") {
@@ -231,6 +275,7 @@ body {
         wordCount={stats.words}
         onExportHTML={exportHTML}
         onExportMarkdown={exportMarkdown}
+        onExportPDF={exportPDF}
         onExportRaw={exportRaw}
         onImportFile={handleImportFile}
         onViewModeChange={setViewMode}
