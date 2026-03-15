@@ -11,6 +11,7 @@ import {
   Moon,
   PanelLeft,
   PanelRight,
+  Printer,
   Sun,
 } from "lucide-react"
 import { useTheme } from "next-themes"
@@ -62,6 +63,8 @@ interface EditorHeaderProps {
   onExportMarkdown: () => void
   onImportFile: (content: string) => void
   onExportRaw: () => void
+  onExportHTML: () => void
+  onExportPDF: () => void
 }
 
 export function EditorHeader({
@@ -74,6 +77,8 @@ export function EditorHeader({
   onExportRaw,
   onExportMarkdown,
   onImportFile,
+  onExportHTML,
+  onExportPDF,
 }: EditorHeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -290,8 +295,15 @@ export function EditorHeader({
                 <ClipboardType className="h-4 w-4" />
                 Export Raw
               </DropdownMenuItem>
-              {/*<DropdownMenuSeparator />*/}
-              {/* TODO: Add HTML & PDF Export Options */}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2" onClick={onExportHTML}>
+                <FileCode className="h-4 w-4" />
+                HTML (.html)
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={onExportPDF}>
+                <Printer className="h-4 w-4" />
+                PDF (.pdf)
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
