@@ -2,19 +2,16 @@
 
 import { Check, ChevronDown } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 
-// TODO: Add Bitbucket markdown styles
 export type PlatformType = "standard" | "github" | "gitlab" | "bitbucket"
 
 interface Platform {
   id: PlatformType
   name: string
   description: string
-  disabled?: boolean
 }
 
 const PLATFORMS: Platform[] = [
@@ -37,7 +34,6 @@ const PLATFORMS: Platform[] = [
     id: "bitbucket",
     name: "Bitbucket",
     description: "Bitbucket Markdown",
-    disabled: true,
   },
 ]
 
@@ -70,14 +66,12 @@ export function PlatformSelector({ platform, onPlatformChange }: PlatformSelecto
               className={`hover:bg-accent flex w-full items-start gap-3 rounded-md px-3 py-2 text-left transition-colors ${
                 platform === p.id ? "bg-accent" : ""
               }`}
-              disabled={p.disabled}
               onClick={() => onPlatformChange(p.id)}
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-foreground text-sm font-medium">{p.name}</span>
                   {platform === p.id && <Check className="text-primary h-3.5 w-3.5" />}
-                  {p.disabled && <Badge variant="secondary">Coming Soon</Badge>}
                 </div>
                 <p className="text-muted-foreground mt-0.5 text-xs">{p.description}</p>
               </div>
