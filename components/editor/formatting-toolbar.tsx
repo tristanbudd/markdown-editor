@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import { Fragment, useState, type ReactNode } from "react"
 import {
   Bold,
   CheckSquare,
@@ -25,6 +25,15 @@ import {
   Undo2,
 } from "lucide-react"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -37,6 +46,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+import { type PlatformType } from "./platform-selector"
+
 interface FormattingToolbarProps {
   onInsert: (template: string) => void
   onWrap: (before: string, after: string) => void
@@ -44,10 +55,11 @@ interface FormattingToolbarProps {
   onRedo: () => void
   canUndo: boolean
   canRedo: boolean
+  platform: PlatformType
 }
 
 interface ToolbarButtonConfig {
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   shortcut?: string
   action: () => void
@@ -55,16 +67,11 @@ interface ToolbarButtonConfig {
 }
 
 interface ToolbarGroup {
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   items: ToolbarButtonConfig[]
 }
 
-// TODO: Implement toolbar button actions
-// - Each button should insert corresponding markdown syntax at cursor position
-// - Handle text selection (wrap selected text with formatting)
-// - Support keyboard shortcuts (Ctrl+B for bold, etc.)
-// - Connect Undo/Redo to editor history state
 function ToolbarButton({
   icon,
   label,
@@ -113,8 +120,7 @@ function ToolbarDropdown({ icon, label, items }: ToolbarGroup) {
       </Tooltip>
       <DropdownMenuContent align="start" className="min-w-35">
         {items.map((item) => (
-          // TODO: Add onClick handler to insert markdown syntax
-          <DropdownMenuItem key={item.label} className="gap-2">
+          <DropdownMenuItem key={item.label} className="gap-2" onClick={item.action}>
             {item.icon}
             <span>{item.label}</span>
             {item.shortcut && (
@@ -137,7 +143,7 @@ function MegaDropdown({
   label,
   sections,
 }: {
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   sections: GroupedSection[]
 }) {
@@ -159,12 +165,11 @@ function MegaDropdown({
       </Tooltip>
       <DropdownMenuContent align="start" className="min-w-40">
         {sections.map((section, i) => (
-          <React.Fragment key={section.label}>
+          <Fragment key={section.label}>
             {i > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="py-1 text-xs">{section.label}</DropdownMenuLabel>
             {section.items.map((item) => (
-              // TODO: Add onClick handler to insert markdown syntax
-              <DropdownMenuItem key={item.label} className="gap-2">
+              <DropdownMenuItem key={item.label} className="gap-2" onClick={item.action}>
                 {item.icon}
                 <span>{item.label}</span>
                 {item.shortcut && (
@@ -172,7 +177,7 @@ function MegaDropdown({
                 )}
               </DropdownMenuItem>
             ))}
-          </React.Fragment>
+          </Fragment>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -186,7 +191,35 @@ export function FormattingToolbar({
   onRedo,
   canUndo,
   canRedo,
+  platform,
 }: FormattingToolbarProps) {
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogMsg, setDialogMsg] = useState("")
+
+  function showPlatformDialog(msg: string) {
+    setDialogMsg(msg)
+    setDialogOpen(true)
+  }
+
+  function guardedAction(
+    action: () => void,
+    supportedPlatforms: PlatformType[],
+    featureName: string
+  ): () => void {
+    return () => {
+      if (!supportedPlatforms.includes(platform)) {
+        const supported = supportedPlatforms
+          .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+          .join(", ")
+        showPlatformDialog(
+          `"${featureName}" is not supported on your current platform. It is only available on: ${supported}.`
+        )
+        return
+      }
+      action()
+    }
+  }
+
   const historyButtons: ToolbarButtonConfig[] = [
     { icon: <Undo2 className="h-3.5 w-3.5" />, label: "Undo", shortcut: "Ctrl+Z", action: onUndo },
     { icon: <Redo2 className="h-3.5 w-3.5" />, label: "Redo", shortcut: "Ctrl+Y", action: onRedo },
@@ -245,24 +278,26 @@ export function FormattingToolbar({
       label: "Numbered List",
       action: () => onInsert("1. "),
     },
-    // TODO: Add warning if user tries to insert task list on unsupported platforms
     {
       icon: <CheckSquare className="h-4 w-4" />,
       label: "Task List",
-      action: () => onInsert("- [ ] "),
+      action: guardedAction(() => onInsert("- [ ] "), ["github", "gitlab"], "Task List"),
     },
   ]
 
   const blockItems: ToolbarButtonConfig[] = [
     { icon: <Quote className="h-4 w-4" />, label: "Blockquote", action: () => onInsert("> ") },
-    // TODO: Add warning if user tries to insert table on unsupported platforms
     {
       icon: <Table className="h-4 w-4" />,
       label: "Table",
-      action: () =>
-        onInsert(
-          "| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n"
-        ),
+      action: guardedAction(
+        () =>
+          onInsert(
+            "| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n"
+          ),
+        ["github", "gitlab", "bitbucket"],
+        "Table"
+      ),
     },
     { icon: <Minus className="h-4 w-4" />, label: "Divider", action: () => onInsert("---") },
   ]
@@ -355,6 +390,19 @@ export function FormattingToolbar({
           <ToolbarButton key={btn.label} {...btn} />
         ))}
       </div>
+
+      {/* Platform restriction dialog */}
+      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Not Supported on This Platform</AlertDialogTitle>
+            <AlertDialogDescription>{dialogMsg}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setDialogOpen(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   )
 }

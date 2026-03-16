@@ -302,6 +302,7 @@ ${content}
         <FormattingToolbar
           canRedo={canRedo}
           canUndo={canUndo}
+          platform={platform}
           onInsert={handleInsertComponent}
           onRedo={redo}
           onUndo={undo}
