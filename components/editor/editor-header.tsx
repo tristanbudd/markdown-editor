@@ -328,7 +328,15 @@ export function EditorHeader({
                 <ClipboardType className="h-4 w-4" />
                 Export Raw
               </DropdownMenuItem>
-              {/* TODO: Add HTML & PDF Export Options */}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2" onClick={onExportHTML}>
+                <FileCode className="h-4 w-4" />
+                HTML (.html)
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2" onClick={onExportPDF}>
+                <Printer className="h-4 w-4" />
+                PDF (.pdf)
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 

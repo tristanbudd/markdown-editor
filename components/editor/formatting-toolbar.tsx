@@ -60,11 +60,6 @@ interface ToolbarGroup {
   items: ToolbarButtonConfig[]
 }
 
-// TODO: Implement toolbar button actions
-// - Each button should insert corresponding markdown syntax at cursor position
-// - Handle text selection (wrap selected text with formatting)
-// - Support keyboard shortcuts (Ctrl+B for bold, etc.)
-// - Connect Undo/Redo to editor history state
 function ToolbarButton({
   icon,
   label,
@@ -113,8 +108,7 @@ function ToolbarDropdown({ icon, label, items }: ToolbarGroup) {
       </Tooltip>
       <DropdownMenuContent align="start" className="min-w-35">
         {items.map((item) => (
-          // TODO: Add onClick handler to insert markdown syntax
-          <DropdownMenuItem key={item.label} className="gap-2">
+          <DropdownMenuItem key={item.label} className="gap-2" onClick={item.action}>
             {item.icon}
             <span>{item.label}</span>
             {item.shortcut && (
@@ -163,8 +157,7 @@ function MegaDropdown({
             {i > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="py-1 text-xs">{section.label}</DropdownMenuLabel>
             {section.items.map((item) => (
-              // TODO: Add onClick handler to insert markdown syntax
-              <DropdownMenuItem key={item.label} className="gap-2">
+              <DropdownMenuItem key={item.label} className="gap-2" onClick={item.action}>
                 {item.icon}
                 <span>{item.label}</span>
                 {item.shortcut && (
@@ -245,7 +238,6 @@ export function FormattingToolbar({
       label: "Numbered List",
       action: () => onInsert("1. "),
     },
-    // TODO: Add warning if user tries to insert task list on unsupported platforms
     {
       icon: <CheckSquare className="h-4 w-4" />,
       label: "Task List",
@@ -255,7 +247,6 @@ export function FormattingToolbar({
 
   const blockItems: ToolbarButtonConfig[] = [
     { icon: <Quote className="h-4 w-4" />, label: "Blockquote", action: () => onInsert("> ") },
-    // TODO: Add warning if user tries to insert table on unsupported platforms
     {
       icon: <Table className="h-4 w-4" />,
       label: "Table",
