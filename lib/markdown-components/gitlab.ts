@@ -1,3 +1,8 @@
+/**
+ * @file gitlab.ts
+ * @description Insertable component definitions specific to the GitLab markdown platform.
+ */
+
 import type { InsertableComponent } from "./index"
 
 export const GITLAB_COMPONENTS: InsertableComponent[] = [

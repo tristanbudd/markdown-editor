@@ -1,3 +1,9 @@
+/**
+ * @file default-markdown.ts
+ * @description Default markdown content shown in the editor on first load.
+ * Covers all standard CommonMark elements as a reference/demo for users.
+ */
+
 export const DEFAULT_MARKDOWN = `# Welcome to the Markdown Editor!
 
 ## Heading Levels

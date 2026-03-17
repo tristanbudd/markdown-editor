@@ -1,3 +1,8 @@
+/**
+ * @file bitbucket.ts
+ * @description Insertable component definitions specific to the Bitbucket markdown platform.
+ */
+
 import type { InsertableComponent } from "./index"
 
 export const BITBUCKET_COMPONENTS: InsertableComponent[] = [

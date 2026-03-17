@@ -1,3 +1,10 @@
+/**
+ * @file markdown-preview.tsx
+ * @description Renders markdown content as styled HTML using ReactMarkdown. Supports
+ * platform-specific extensions for GitHub, GitLab, and Bitbucket, including alerts,
+ * task lists, frontmatter, TOC, inline diffs, and emoji shortcodes.
+ */
+
 import {
   cloneElement,
   forwardRef,
@@ -64,6 +71,7 @@ interface HastNode {
   children?: HastNode[]
 }
 
+/** Maps GitHub-style emoji shortcodes (e.g. :smile:) to their Unicode equivalents. */
 const EMOJI_MAP: Record<string, string> = {
   smile: "😄",
   laughing: "😆",
@@ -368,6 +376,7 @@ interface UnistNode {
 type GitlabAlertType = "note" | "tip" | "important" | "warning" | "caution"
 const GITLAB_ALERT_TYPES = ["note", "tip", "important", "warning", "caution"] as const
 
+/** Returns a valid GitlabAlertType from a raw string, defaulting to "note" if unrecognised. */
 function toGitlabAlertType(raw: string): GitlabAlertType {
   const lower = raw.toLowerCase()
   return (GITLAB_ALERT_TYPES as readonly string[]).includes(lower)
@@ -375,8 +384,10 @@ function toGitlabAlertType(raw: string): GitlabAlertType {
     : "note"
 }
 
+/** Matches the [!TYPE] header line in alert blockquotes, e.g. `[!WARNING] optional title`. */
 const ALERT_HEADER_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(.*)/i
 
+/** Remark plugin - replaces :shortcode: patterns with emoji characters. */
 const remarkEmojis = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "text" && node.value)
@@ -389,6 +400,7 @@ const remarkEmojis = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - converts GitHub-style `> [!TYPE]` blockquotes into styled alert nodes. */
 const remarkGithubAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children?.length) {
@@ -416,6 +428,10 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/**
+ * Remark plugin - handles GitLab's triple-chevron alert syntax (`>>> [!TYPE]`).
+ * Three nested blockquotes are collapsed into a single styled alert node.
+ */
 const remarkGitlabTripleChevronAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children?.length) {
@@ -466,6 +482,7 @@ const remarkGitlabTripleChevronAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - handles GitLab's single-chevron alert syntax (`> [!TYPE]`). */
 const remarkGitlabSingleChevronAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children && node.children.length > 0) {
@@ -504,6 +521,7 @@ const remarkGitlabSingleChevronAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - renders `[~] item` list items as strikethrough task list entries (GitLab). */
 const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "list") {
@@ -542,6 +560,7 @@ const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - converts `{+ text +}` / `{- text -}` patterns into GitLab inline diff nodes. */
 const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
   const walk = (node: UnistNode, parent?: UnistNode) => {
     if (node.type === "paragraph" && node.children) {
@@ -579,6 +598,7 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - renders YAML frontmatter as a styled key/value table (GitLab). */
 const remarkGitlabFrontMatter = () => (tree: UnistNode) => {
   if (!tree.children?.length) return
 
@@ -608,11 +628,16 @@ const remarkGitlabFrontMatter = () => (tree: UnistNode) => {
   }
 }
 
+/** Recursively extracts the plain text content from a UnistNode tree. */
 function getNodeText(node: UnistNode): string {
   if (node.type === "text") return node.value ?? ""
   return (node.children ?? []).map(getNodeText).join("")
 }
 
+/**
+ * Remark plugin - replaces `[[_TOC_]]`, `[TOC]`, or `[[TOC]]` with a placeholder
+ * div that the React renderer later hydrates into a real table of contents.
+ */
 const remarkTOC = () => (tree: UnistNode) => {
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "")
 
@@ -634,6 +659,7 @@ const remarkTOC = () => (tree: UnistNode) => {
   })
 }
 
+/** Converts a heading string into a URL-safe slug for anchor links. */
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -649,6 +675,10 @@ interface TocEntry {
   id: string
 }
 
+/**
+ * Parses heading lines from raw markdown to build a TOC entry list.
+ * Skips headings inside fenced code blocks and handles duplicate slugs.
+ */
 function extractHeadings(markdown: string): TocEntry[] {
   const entries: TocEntry[] = []
   const slugCount: Record<string, number> = {}
@@ -675,6 +705,7 @@ function extractHeadings(markdown: string): TocEntry[] {
 
 type AlertStyle = { border: string; bg: string; text: string; Icon: typeof Info }
 
+/** Tailwind colour tokens for each GitHub alert type. */
 const GITHUB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   note: { border: "border-blue-500", bg: "bg-blue-500/10", text: "text-blue-500", Icon: Info },
   tip: {
@@ -698,6 +729,7 @@ const GITHUB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   caution: { border: "border-red-500", bg: "bg-red-500/10", text: "text-red-500", Icon: XOctagon },
 }
 
+/** Tailwind colour tokens for each GitLab alert type. */
 const GITLAB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   note: {
     border: "border-blue-700",
@@ -731,6 +763,7 @@ const GITLAB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   },
 }
 
+/** Renders a styled alert blockquote for both GitHub and GitLab alert types. */
 function renderAlert(
   alertType: GitlabAlertType,
   title: string,
@@ -757,11 +790,16 @@ function renderAlert(
   )
 }
 
+/** Recursively extracts plain text from a HAST node tree. */
 function getHastText(node: HastNode): string {
   if (node.type === "text") return node.value ?? ""
   return (node.children ?? []).map(getHastText).join("")
 }
 
+/**
+ * Attempts to parse a GitLab fenced alert (`>>> [!TYPE]`) from a HAST blockquote node.
+ * Returns null if the node doesn't match the expected triple-blockquote structure.
+ */
 function parseFencedAlertFromHast(
   node: HastNode
 ): { alertType: GitlabAlertType; title: string; bodyText: string } | null {
@@ -799,6 +837,10 @@ function parseFencedAlertFromHast(
   }
 }
 
+/**
+ * Returns true if a HAST node is a triple-nested empty blockquote (`>>>`).
+ * Used to suppress rendering of bare triple-chevron structures that aren't alerts.
+ */
 function isEmptyTripleFenceHast(node: HastNode): boolean {
   if (node.tagName !== "blockquote") return false
   const r1 = (node.children ?? []).filter((c) => !(c.type === "text" && c.value?.trim() === ""))
@@ -811,6 +853,7 @@ function isEmptyTripleFenceHast(node: HastNode): boolean {
 
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
   function MarkdownPreview({ content, platform }, ref) {
+    // Build the remark plugin list based on the active platform
     const remarkPlugins = useMemo(() => {
       const plugins: PluggableList = []
       plugins.push(remarkGfm)
@@ -835,6 +878,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       return plugins
     }, [platform])
 
+    // Build the rehype plugin list based on the active platform
     const rehypePlugins = useMemo(() => {
       const plugins: Array<
         typeof rehypeKatex | typeof rehypeHighlight | typeof rehypeRaw | typeof rehypeSlug
@@ -851,6 +895,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
     }, [platform])
 
     const Heading = ({ as: Tag = "h2", children, className = "", id, ...props }: HeadingProps) => {
+      // Anchor links are only shown on GitHub where heading IDs are standard
       const showAnchor = platform === "github" && id
       return (
         <Tag {...props} className={`group relative ${className}`} id={id}>
@@ -948,6 +993,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               code: ({ className, children, ...props }) => {
                 const isInline = !className
                 const codeValue = Array.isArray(children) ? children.join("") : children
+
+                // Show a colour swatch next to inline hex/rgb/hsl values
                 const hexRe = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
                 const rgbRe = /^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/
                 const hslRe = /^hsl\s*\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/
@@ -1017,6 +1064,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         {children}
                       </ul>
                     )
+                  // For platforms that don't support task lists, strip the checkbox
+                  // inputs and render items as plain list entries
                   const extractTaskText = (child: ReactNode): ReactNode => {
                     if (typeof child === "string") return child
                     if (isValidElement(child)) {
@@ -1059,6 +1108,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
               ),
               li: ({ children, ...props }) => {
+                // On the standard platform, render task list markers as plain text
+                // since checkboxes are not supported
                 if (platform === "standard" && children) {
                   let marker = ""
                   const filter = (child: ReactNode): ReactNode => {
@@ -1119,6 +1170,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 }
 
                 if (platform === "gitlab" && hastNode) {
+                  // Suppress empty triple-chevron blockquotes with no alert type
                   if (isEmptyTripleFenceHast(hastNode)) return null
 
                   const parsed = parseFencedAlertFromHast(hastNode)
@@ -1232,6 +1284,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   )
                   if (m) lang = m[1].toLowerCase()
                 }
+                // Render a labelled preview block for special fenced languages
+                // instead of a standard code block
                 if (
                   lang &&
                   ["mermaid", "geojson", "topojson", "stl"].includes(lang) &&

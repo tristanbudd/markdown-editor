@@ -1,3 +1,9 @@
+/**
+ * @file standard.ts
+ * @description Insertable component definitions for the Standard (CommonMark) markdown platform.
+ * Components with show: false are registered for internal use but hidden from the component panel.
+ */
+
 import type { InsertableComponent } from "./index"
 
 export const STANDARD_COMPONENTS: InsertableComponent[] = [

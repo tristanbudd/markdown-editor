@@ -1,3 +1,9 @@
+/**
+ * @file editor-header.tsx
+ * @description Top toolbar for the editor. Handles view mode switching, file import/export,
+ * theme toggling, and document stats. Includes file validation logic on import.
+ */
+
 "use client"
 
 import { useRef, useState } from "react"
@@ -38,8 +44,13 @@ import {
 
 type ViewMode = "split" | "editor" | "preview"
 
+/** File extensions accepted by the import input. */
 const ALLOWED_EXTENSIONS = [".md", ".txt"]
 
+/**
+ * MIME type prefixes that are explicitly rejected on import.
+ * Prevents binary or non-text files slipping through with a misleading extension.
+ */
 const BLOCKED_MIME_PREFIXES = [
   "image/",
   "video/",
@@ -95,15 +106,15 @@ export function EditorHeader({
   function handleImportClick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    // Reset input so the same file can be re-imported if needed
     e.target.value = ""
 
-    // Check MIME type
+    // Reject known binary MIME types before reading the file
     if (file.type && BLOCKED_MIME_PREFIXES.some((prefix) => file.type.startsWith(prefix))) {
       showDialog(`Cannot import "${file.name}". This file type (${file.type}) is not a text file.`)
       return
     }
 
-    // Check extension
     const ext = "." + file.name.split(".").pop()?.toLowerCase()
     const hasKnownExt = ALLOWED_EXTENSIONS.includes(ext)
 
@@ -113,7 +124,7 @@ export function EditorHeader({
       return
     }
 
-    // If there is content, ask for confirmation
+    // If the editor already has content, confirm before overwriting
     if (hasContent) {
       setPendingFile(file)
       setConfirmOpen(true)
@@ -130,6 +141,8 @@ export function EditorHeader({
         showDialog("Could not read file contents.")
         return
       }
+
+      // Null bytes are a strong indicator of a binary file
       const nullByteCount = (text.match(/\0/g) || []).length
       if (nullByteCount > 0) {
         showDialog(
@@ -137,6 +150,8 @@ export function EditorHeader({
         )
         return
       }
+
+      // If more than 10% of characters are non-printable, treat as binary
       const nonPrintable = text.replace(/[\x20-\x7E\t\n\r\u00A0-\uFFFF]/g, "")
       if (text.length > 0 && nonPrintable.length / text.length > 0.1) {
         showDialog(
@@ -144,6 +159,8 @@ export function EditorHeader({
         )
         return
       }
+
+      // For unrecognised extensions that aren't explicitly text/, ask the user to confirm
       if (!hasKnownExt && !file.type.startsWith("text/")) {
         const proceed = confirm(
           `"${file.name}" has an unrecognized extension. The content looks like text. Import anyway?`
@@ -254,7 +271,7 @@ export function EditorHeader({
             <span>{lineCount} lines</span>
           </div>
 
-          {/* File input - hidden, triggered by Import button */}
+          {/* Hidden file input, triggered programmatically by the Import button */}
           <input
             ref={fileInputRef}
             accept=".md,.txt"
@@ -307,7 +324,7 @@ export function EditorHeader({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Combined File menu - below 420px */}
+          {/* Combined file menu - below 420px */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="flex h-8 w-8 min-[420px]:hidden" size="icon" variant="outline">
@@ -355,7 +372,7 @@ export function EditorHeader({
         </div>
       </header>
 
-      {/* Import Warning Dialog */}
+      {/* Confirmation dialog - shown when importing would overwrite existing content */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -371,7 +388,7 @@ export function EditorHeader({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Error AlertDialog for import failures */}
+      {/* Error dialog - shown when import validation fails */}
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

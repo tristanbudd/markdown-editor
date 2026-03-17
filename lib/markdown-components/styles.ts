@@ -1,5 +1,8 @@
-// Markdown styles for preview
-// These can be easily customized here and will apply across the app
+/**
+ * @file styles.ts
+ * @description Shared Tailwind class strings for markdown preview elements.
+ * Edit here to update styles consistently across the app.
+ */
 
 export const PARAGRAPH_STYLE = "leading-relaxed text-foreground/90 my-3"
 

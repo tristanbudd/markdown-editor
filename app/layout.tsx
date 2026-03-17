@@ -1,3 +1,8 @@
+/**
+ * @file layout.tsx
+ * @description Root layout shared across all routes. Sets up global fonts, metadata, theme provider, and analytics.
+ */
+
 import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
@@ -68,6 +73,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
+  // Matches the app background colour in supported browsers
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f8f9fb" },
     { media: "(prefers-color-scheme: dark)", color: "#1a1b2e" },
@@ -81,9 +87,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
+    // suppressHydrationWarning prevents mismatches caused by next-themes injecting attributes on the client
     <html suppressHydrationWarning lang="en-GB">
       <head>
-        {/* Preload KaTeX CSS for better performance */}
+        {/* KaTeX CSS loaded from CDN to avoid bundling it */}
         <link
           crossOrigin="anonymous"
           href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
