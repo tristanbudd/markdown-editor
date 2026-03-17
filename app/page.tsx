@@ -1,3 +1,8 @@
+/**
+ * @file page.tsx
+ * @description Root page ("/"). Renders the editor, or a fallback message on viewports narrower than 350px.
+ */
+
 import { Monitor } from "lucide-react"
 
 import { MarkdownEditor } from "@/components/editor/markdown-editor"

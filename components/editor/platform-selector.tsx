@@ -1,3 +1,10 @@
+/**
+ * @file platform-selector.tsx
+ * @description Popover dropdown for switching the active markdown platform style
+ * (Standard, GitHub, GitLab, Bitbucket). The selected platform controls which
+ * extensions and rendering rules are active in the editor.
+ */
+
 "use client"
 
 import { Check, ChevronDown } from "lucide-react"
@@ -14,6 +21,7 @@ interface Platform {
   description: string
 }
 
+/** The full list of supported platforms shown in the selector. */
 const PLATFORMS: Platform[] = [
   {
     id: "standard",

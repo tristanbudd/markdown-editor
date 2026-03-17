@@ -1,6 +1,13 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+
+/**
+ * @file use-editor-history.ts
+ * @description Custom hook that manages undo/redo history for the editor content.
+ * Immediate changes (e.g. toolbar inserts) are committed to history straight away,
+ * while typed changes are debounced so rapid keystrokes don't flood the history stack.
+ */
 
 interface HistoryState {
   past: string[]
@@ -14,11 +21,24 @@ export function useEditorHistory(initialValue: string) {
     present: initialValue,
     future: [],
   })
+
+  // Holds the debounce timer for non-immediate history commits
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Tracks the last value that was committed to history, used to avoid
+  // creating duplicate entries when the debounce fires with no new changes
   const lastSavedRef = useRef(initialValue)
+
+  // Clear any pending debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const set = useCallback((newValue: string, immediate = false) => {
     if (immediate) {
+      // Bypass the debounce and commit directly to history (e.g. toolbar actions)
       setState((prev) => ({
         past: [...prev.past, prev.present].slice(-100),
         present: newValue,
@@ -28,17 +48,20 @@ export function useEditorHistory(initialValue: string) {
       return
     }
 
+    // Update the visible content immediately so the editor stays responsive
     setState((prev) => ({
       ...prev,
       present: newValue,
     }))
 
+    // Debounce the history commit - only save to past after 500ms of inactivity
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
     timeoutRef.current = setTimeout(() => {
       setState((prev) => {
+        // Skip if nothing has changed since the last commit
         if (lastSavedRef.current === prev.present) return prev
         lastSavedRef.current = prev.present
         return {

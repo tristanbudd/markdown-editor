@@ -1,3 +1,9 @@
+/**
+ * @file formatting-toolbar.tsx
+ * @description Markdown formatting toolbar with responsive layouts. Renders as individual buttons
+ * on large screens, grouped dropdowns on medium, and a single mega-dropdown on small screens.
+ */
+
 "use client"
 
 import { Fragment, useState, type ReactNode } from "react"
@@ -201,6 +207,10 @@ export function FormattingToolbar({
     setDialogOpen(true)
   }
 
+  /**
+   * Wraps a toolbar action with a platform support check. If the current platform
+   * is not in `supportedPlatforms`, shows a dialog instead of running the action.
+   */
   function guardedAction(
     action: () => void,
     supportedPlatforms: PlatformType[],
@@ -391,7 +401,7 @@ export function FormattingToolbar({
         ))}
       </div>
 
-      {/* Platform restriction dialog */}
+      {/* Platform restriction dialog - shown when a feature isn't supported on the active platform */}
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

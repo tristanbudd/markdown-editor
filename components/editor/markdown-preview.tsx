@@ -1,3 +1,10 @@
+/**
+ * @file markdown-preview.tsx
+ * @description Renders markdown content as styled HTML using ReactMarkdown. Supports
+ * platform-specific extensions for GitHub, GitLab, and Bitbucket, including alerts,
+ * task lists, frontmatter, TOC, inline diffs, and emoji shortcodes.
+ */
+
 import {
   cloneElement,
   forwardRef,
@@ -31,9 +38,23 @@ import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import type { PluggableList, Plugin } from "unified"
 
+import {
+  BLOCKQUOTE_STYLE,
+  CODE_STYLES,
+  HEADING_STYLES,
+  HR_STYLE,
+  IMAGE_STYLE,
+  LINK_STYLE,
+  LIST_STYLES,
+  TABLE_STYLES,
+} from "@/lib/markdown-components/styles"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
+
+const COLOR_HEX_RE = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+const COLOR_RGB_RE = /^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/
+const COLOR_HSL_RE = /^hsl\s*\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/
 
 type TaskElementProps = {
   children?: ReactNode
@@ -54,6 +75,7 @@ interface HeadingProps extends HTMLAttributes<HTMLElement> {
   as?: ElementType
   id?: string
   children: ReactNode
+  platform: PlatformType
 }
 
 interface HastNode {
@@ -64,6 +86,7 @@ interface HastNode {
   children?: HastNode[]
 }
 
+/** Maps GitHub-style emoji shortcodes (e.g. :smile:) to their Unicode equivalents. */
 const EMOJI_MAP: Record<string, string> = {
   smile: "😄",
   laughing: "😆",
@@ -368,6 +391,7 @@ interface UnistNode {
 type GitlabAlertType = "note" | "tip" | "important" | "warning" | "caution"
 const GITLAB_ALERT_TYPES = ["note", "tip", "important", "warning", "caution"] as const
 
+/** Returns a valid GitlabAlertType from a raw string, defaulting to "note" if unrecognised. */
 function toGitlabAlertType(raw: string): GitlabAlertType {
   const lower = raw.toLowerCase()
   return (GITLAB_ALERT_TYPES as readonly string[]).includes(lower)
@@ -375,8 +399,10 @@ function toGitlabAlertType(raw: string): GitlabAlertType {
     : "note"
 }
 
+/** Matches the [!TYPE] header line in alert blockquotes, e.g. `[!WARNING] optional title`. */
 const ALERT_HEADER_RE = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][\t ]*(.*)/i
 
+/** Remark plugin - replaces :shortcode: patterns with emoji characters. */
 const remarkEmojis = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "text" && node.value)
@@ -389,6 +415,7 @@ const remarkEmojis = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - converts GitHub-style `> [!TYPE]` blockquotes into styled alert nodes. */
 const remarkGithubAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children?.length) {
@@ -416,6 +443,10 @@ const remarkGithubAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/**
+ * Remark plugin - handles GitLab's triple-chevron alert syntax (`>>> [!TYPE]`).
+ * Three nested blockquotes are collapsed into a single styled alert node.
+ */
 const remarkGitlabTripleChevronAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children?.length) {
@@ -466,6 +497,7 @@ const remarkGitlabTripleChevronAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - handles GitLab's single-chevron alert syntax (`> [!TYPE]`). */
 const remarkGitlabSingleChevronAlerts = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "blockquote" && node.children && node.children.length > 0) {
@@ -504,6 +536,7 @@ const remarkGitlabSingleChevronAlerts = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - renders `[~] item` list items as strikethrough task list entries (GitLab). */
 const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
   const walk = (node: UnistNode) => {
     if (node.type === "list") {
@@ -542,6 +575,7 @@ const remarkGitlabTaskTilde = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - converts `{+ text +}` / `{- text -}` patterns into GitLab inline diff nodes. */
 const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
   const walk = (node: UnistNode, parent?: UnistNode) => {
     if (node.type === "paragraph" && node.children) {
@@ -579,6 +613,7 @@ const remarkGitlabInlineDiff = () => (tree: UnistNode) => {
   walk(tree)
 }
 
+/** Remark plugin - renders YAML frontmatter as a styled key/value table (GitLab). */
 const remarkGitlabFrontMatter = () => (tree: UnistNode) => {
   if (!tree.children?.length) return
 
@@ -608,11 +643,16 @@ const remarkGitlabFrontMatter = () => (tree: UnistNode) => {
   }
 }
 
+/** Recursively extracts the plain text content from a UnistNode tree. */
 function getNodeText(node: UnistNode): string {
   if (node.type === "text") return node.value ?? ""
   return (node.children ?? []).map(getNodeText).join("")
 }
 
+/**
+ * Remark plugin - replaces `[[_TOC_]]`, `[TOC]`, or `[[TOC]]` with a placeholder
+ * div that the React renderer later hydrates into a real table of contents.
+ */
 const remarkTOC = () => (tree: UnistNode) => {
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "")
 
@@ -634,6 +674,7 @@ const remarkTOC = () => (tree: UnistNode) => {
   })
 }
 
+/** Converts a heading string into a URL-safe slug for anchor links. */
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -649,6 +690,10 @@ interface TocEntry {
   id: string
 }
 
+/**
+ * Parses heading lines from raw markdown to build a TOC entry list.
+ * Skips headings inside fenced code blocks and handles duplicate slugs.
+ */
 function extractHeadings(markdown: string): TocEntry[] {
   const entries: TocEntry[] = []
   const slugCount: Record<string, number> = {}
@@ -675,6 +720,7 @@ function extractHeadings(markdown: string): TocEntry[] {
 
 type AlertStyle = { border: string; bg: string; text: string; Icon: typeof Info }
 
+/** Tailwind colour tokens for each GitHub alert type. */
 const GITHUB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   note: { border: "border-blue-500", bg: "bg-blue-500/10", text: "text-blue-500", Icon: Info },
   tip: {
@@ -698,6 +744,7 @@ const GITHUB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   caution: { border: "border-red-500", bg: "bg-red-500/10", text: "text-red-500", Icon: XOctagon },
 }
 
+/** Tailwind colour tokens for each GitLab alert type. */
 const GITLAB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   note: {
     border: "border-blue-700",
@@ -731,6 +778,7 @@ const GITLAB_ALERT_STYLES: Record<GitlabAlertType, AlertStyle> = {
   },
 }
 
+/** Renders a styled alert blockquote for both GitHub and GitLab alert types. */
 function renderAlert(
   alertType: GitlabAlertType,
   title: string,
@@ -757,11 +805,16 @@ function renderAlert(
   )
 }
 
+/** Recursively extracts plain text from a HAST node tree. */
 function getHastText(node: HastNode): string {
   if (node.type === "text") return node.value ?? ""
   return (node.children ?? []).map(getHastText).join("")
 }
 
+/**
+ * Attempts to parse a GitLab fenced alert (`>>> [!TYPE]`) from a HAST blockquote node.
+ * Returns null if the node doesn't match the expected triple-blockquote structure.
+ */
 function parseFencedAlertFromHast(
   node: HastNode
 ): { alertType: GitlabAlertType; title: string; bodyText: string } | null {
@@ -799,6 +852,10 @@ function parseFencedAlertFromHast(
   }
 }
 
+/**
+ * Returns true if a HAST node is a triple-nested empty blockquote (`>>>`).
+ * Used to suppress rendering of bare triple-chevron structures that aren't alerts.
+ */
 function isEmptyTripleFenceHast(node: HastNode): boolean {
   if (node.tagName !== "blockquote") return false
   const r1 = (node.children ?? []).filter((c) => !(c.type === "text" && c.value?.trim() === ""))
@@ -809,8 +866,38 @@ function isEmptyTripleFenceHast(node: HastNode): boolean {
   return r3.length === 0
 }
 
+/**
+ * Custom heading component that conditionally renders anchor links based on platform and presence of an ID.
+ * Anchor links are only shown for GitHub where heading IDs are standardized.
+ */
+function Heading({
+  as: Tag = "h2",
+  children,
+  className = "",
+  id,
+  platform,
+  ...props
+}: HeadingProps) {
+  const showAnchor = platform === "github" && id
+  return (
+    <Tag {...props} className={`group relative ${className}`} id={id}>
+      {showAnchor && (
+        <a
+          aria-label="Anchor link"
+          className="text-muted-foreground hover:text-foreground absolute top-1/2 -left-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
+          href={`#${id}`}
+        >
+          <Link className="h-4 w-4" />
+        </a>
+      )}
+      {children}
+    </Tag>
+  )
+}
+
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
   function MarkdownPreview({ content, platform }, ref) {
+    // Build the remark plugin list based on the active platform
     const remarkPlugins = useMemo(() => {
       const plugins: PluggableList = []
       plugins.push(remarkGfm)
@@ -835,6 +922,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       return plugins
     }, [platform])
 
+    // Build the rehype plugin list based on the active platform
     const rehypePlugins = useMemo(() => {
       const plugins: Array<
         typeof rehypeKatex | typeof rehypeHighlight | typeof rehypeRaw | typeof rehypeSlug
@@ -850,24 +938,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       return plugins
     }, [platform])
 
-    const Heading = ({ as: Tag = "h2", children, className = "", id, ...props }: HeadingProps) => {
-      const showAnchor = platform === "github" && id
-      return (
-        <Tag {...props} className={`group relative ${className}`} id={id}>
-          {showAnchor && (
-            <a
-              aria-label="Anchor link"
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 -left-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
-              href={`#${id}`}
-            >
-              <Link className="h-4 w-4" />
-            </a>
-          )}
-          {children}
-        </Tag>
-      )
-    }
-
     return (
       <ScrollArea className="h-full">
         <div
@@ -877,56 +947,32 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
           <ReactMarkdown
             components={{
               h1: ({ children, ...props }) => (
-                <Heading
-                  as="h1"
-                  {...props}
-                  className="text-foreground border-border mb-4 scroll-m-20 border-b pb-2 text-2xl font-bold tracking-tight"
-                >
+                <Heading as="h1" platform={platform} {...props} className={HEADING_STYLES.h1}>
                   {children}
                 </Heading>
               ),
               h2: ({ children, ...props }) => (
-                <Heading
-                  as="h2"
-                  {...props}
-                  className="text-foreground border-border mt-8 mb-3 scroll-m-20 border-b pb-1.5 text-xl font-semibold tracking-tight"
-                >
+                <Heading as="h2" platform={platform} {...props} className={HEADING_STYLES.h2}>
                   {children}
                 </Heading>
               ),
               h3: ({ children, ...props }) => (
-                <Heading
-                  as="h3"
-                  {...props}
-                  className="text-foreground mt-6 mb-2 scroll-m-20 text-lg font-semibold tracking-tight"
-                >
+                <Heading as="h3" platform={platform} {...props} className={HEADING_STYLES.h3}>
                   {children}
                 </Heading>
               ),
               h4: ({ children, ...props }) => (
-                <Heading
-                  as="h4"
-                  {...props}
-                  className="text-foreground mt-5 mb-1.5 scroll-m-20 text-base font-semibold tracking-tight"
-                >
+                <Heading as="h4" platform={platform} {...props} className={HEADING_STYLES.h4}>
                   {children}
                 </Heading>
               ),
               h5: ({ children, ...props }) => (
-                <Heading
-                  as="h5"
-                  {...props}
-                  className="text-foreground mt-4 mb-1 scroll-m-20 text-sm font-semibold tracking-tight"
-                >
+                <Heading as="h5" platform={platform} {...props} className={HEADING_STYLES.h5}>
                   {children}
                 </Heading>
               ),
               h6: ({ children, ...props }) => (
-                <Heading
-                  as="h6"
-                  {...props}
-                  className="text-muted-foreground mt-4 mb-1 scroll-m-20 text-sm font-medium tracking-tight"
-                >
+                <Heading as="h6" platform={platform} {...props} className={HEADING_STYLES.h6}>
                   {children}
                 </Heading>
               ),
@@ -948,22 +994,18 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               code: ({ className, children, ...props }) => {
                 const isInline = !className
                 const codeValue = Array.isArray(children) ? children.join("") : children
-                const hexRe = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
-                const rgbRe = /^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/
-                const hslRe = /^hsl\s*\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/
+
+                // Show a colour swatch next to inline hex/rgb/hsl values
                 let color = null
                 if (typeof codeValue === "string") {
-                  if (hexRe.test(codeValue)) color = codeValue
-                  else if (rgbRe.test(codeValue)) color = codeValue
-                  else if (hslRe.test(codeValue)) color = codeValue
+                  if (COLOR_HEX_RE.test(codeValue)) color = codeValue
+                  else if (COLOR_RGB_RE.test(codeValue)) color = codeValue
+                  else if (COLOR_HSL_RE.test(codeValue)) color = codeValue
                 }
                 if (isInline) {
                   return (
                     <span style={{ display: "inline-flex", alignItems: "center" }}>
-                      <code
-                        className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
-                        {...props}
-                      >
+                      <code className={`md-hover-label-inline ${CODE_STYLES.inline}`} {...props}>
                         {children}
                         {color && (
                           <span
@@ -992,7 +1034,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               a: ({ ...props }) => (
                 <a
                   {...props}
-                  className="md-hover-label-inline text-primary hover:text-primary/80 underline underline-offset-2"
+                  className={`md-hover-label-inline ${LINK_STYLE}`}
                   rel="noopener noreferrer"
                   target="_blank"
                 />
@@ -1002,14 +1044,14 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 <img
                   {...props}
                   alt={props.alt || ""}
-                  className="md-hover-label-inline border-border h-auto max-w-full rounded-lg border"
+                  className={`md-hover-label-inline ${IMAGE_STYLE}`}
                   loading="lazy"
                 />
               ),
               ul: ({ className, children, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
                 const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
-                const listClasses = `md-hover-label !mt-6 mb-4 ml-6 space-y-2 ${isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"}`
+                const listClasses = `md-hover-label ${LIST_STYLES.ul} ${isTaskList && isPlatformTaskList ? LIST_STYLES.task : ""}`
                 if (isTaskList && !isPlatformTaskList) {
                   if (platform === "standard")
                     return (
@@ -1017,6 +1059,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         {children}
                       </ul>
                     )
+                  // For platforms that don't support task lists, strip the checkbox
+                  // inputs and render items as plain list entries
                   const extractTaskText = (child: ReactNode): ReactNode => {
                     if (typeof child === "string") return child
                     if (isValidElement(child)) {
@@ -1038,13 +1082,13 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         children.map((child, idx) => {
                           const c = extractTaskText(child)
                           return c ? (
-                            <li key={idx} className="leading-relaxed">
+                            <li key={idx} className={LIST_STYLES.item}>
                               {c}
                             </li>
                           ) : null
                         })
                       ) : (
-                        <li className="leading-relaxed">{children}</li>
+                        <li className={LIST_STYLES.item}>{children}</li>
                       )}
                     </ul>
                   )
@@ -1056,9 +1100,11 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 )
               },
               ol: ({ ...props }) => (
-                <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
+                <ol {...props} className={`md-hover-label ${LIST_STYLES.ol}`} />
               ),
               li: ({ children, ...props }) => {
+                // On the standard platform, render task list markers as plain text
+                // since checkboxes are not supported
                 if (platform === "standard" && children) {
                   let marker = ""
                   const filter = (child: ReactNode): ReactNode => {
@@ -1080,14 +1126,14 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   }
                   const filtered = Array.isArray(children) ? children.map(filter) : filter(children)
                   return (
-                    <li {...props} className="leading-relaxed">
+                    <li {...props} className={LIST_STYLES.item}>
                       {marker}
                       {filtered}
                     </li>
                   )
                 }
                 return (
-                  <li {...props} className="leading-relaxed">
+                  <li {...props} className={LIST_STYLES.item}>
                     {children}
                   </li>
                 )
@@ -1119,6 +1165,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 }
 
                 if (platform === "gitlab" && hastNode) {
+                  // Suppress empty triple-chevron blockquotes with no alert type
                   if (isEmptyTripleFenceHast(hastNode)) return null
 
                   const parsed = parseFencedAlertFromHast(hastNode)
@@ -1130,10 +1177,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 }
 
                 return (
-                  <blockquote
-                    {...props}
-                    className="md-hover-label border-primary/40 text-muted-foreground my-4 border-l-4 pl-4 italic"
-                  >
+                  <blockquote {...props} className={`md-hover-label ${BLOCKQUOTE_STYLE}`}>
                     {children}
                   </blockquote>
                 )
@@ -1194,7 +1238,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         {headings.map((h, i) => (
                           <li key={i} style={{ paddingLeft: `${(h.depth - minDepth) * 16}px` }}>
                             <a
-                              className="text-primary hover:text-primary/70 text-sm underline-offset-2 hover:underline"
+                              className={`text-sm underline-offset-2 hover:underline ${LINK_STYLE}`}
                               href={`#${h.id}`}
                             >
                               {h.text}
@@ -1221,7 +1265,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   </div>
                 )
               },
-              hr: () => <hr className="md-hover-label border-border my-8" />,
+              hr: () => <hr className={`md-hover-label ${HR_STYLE}`} />,
               pre: ({ className, children, node, ...props }) => {
                 let lang = ""
                 const fc = node?.children?.[0]
@@ -1232,6 +1276,8 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   )
                   if (m) lang = m[1].toLowerCase()
                 }
+                // Render a labelled preview block for special fenced languages
+                // instead of a standard code block
                 if (
                   lang &&
                   ["mermaid", "geojson", "topojson", "stl"].includes(lang) &&
@@ -1258,10 +1304,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   )
                 }
                 return (
-                  <pre
-                    {...props}
-                    className="md-hover-label border-border bg-muted/50 my-4 overflow-x-auto rounded-lg border p-4 text-sm"
-                  >
+                  <pre {...props} className={`md-hover-label ${CODE_STYLES.block}`}>
                     {children}
                   </pre>
                 )
@@ -1278,40 +1321,30 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               table: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return (
-                  <div className="md-hover-label my-6 w-full overflow-y-auto">
-                    <table {...props} className="w-full overflow-hidden rounded-lg" />
+                  <div className={`md-hover-label ${TABLE_STYLES.wrapper}`}>
+                    <table {...props} className={TABLE_STYLES.table} />
                   </div>
                 )
               },
               thead: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return <thead {...props} className="bg-muted/50 border-b" />
+                return <thead {...props} className={TABLE_STYLES.thead} />
               },
               tbody: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return <tbody {...props} className="divide-border divide-y" />
+                return <tbody {...props} className={TABLE_STYLES.tbody} />
               },
               tr: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return <tr {...props} className="hover:bg-muted/30 transition-colors" />
+                return <tr {...props} className={TABLE_STYLES.tr} />
               },
               th: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return (
-                  <th
-                    {...props}
-                    className="text-foreground border-r px-4 py-3 text-left font-semibold last:border-0"
-                  />
-                )
+                return <th {...props} className={TABLE_STYLES.th} />
               },
               td: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return (
-                  <td
-                    {...props}
-                    className="text-muted-foreground border-r px-4 py-3 last:border-0"
-                  />
-                )
+                return <td {...props} className={TABLE_STYLES.td} />
               },
               dl: ({ children }) => (
                 <dl className="border-muted-foreground my-6 space-y-4 border-l-2 pl-4">

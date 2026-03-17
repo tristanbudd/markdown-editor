@@ -1,3 +1,8 @@
+/**
+ * @file github.ts
+ * @description Insertable component definitions specific to the GitHub markdown platform.
+ */
+
 import type { InsertableComponent } from "./index"
 
 export const GITHUB_COMPONENTS: InsertableComponent[] = [

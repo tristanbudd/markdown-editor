@@ -1,3 +1,9 @@
+/**
+ * @file markdown-editor.tsx
+ * @description Root editor component. Manages editor state, view mode, platform selection,
+ * undo/redo history, file import/export, and coordinates the toolbar, preview, and component panel.
+ */
+
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -42,10 +48,7 @@ export function MarkdownEditor() {
   const handleInsertComponent = useCallback(
     (template: string) => {
       const textarea = textareaRef.current
-      if (!textarea) {
-        setMarkdown(markdown + template, true)
-        return
-      }
+      if (!textarea) return
 
       const start = textarea.selectionStart
       const end = textarea.selectionEnd
@@ -70,13 +73,14 @@ export function MarkdownEditor() {
       if (!textarea) return
       const start = textarea.selectionStart
       const end = textarea.selectionEnd
+      // Fall back to "text" if nothing is selected
       const selectedText = markdown.slice(start, end) || "text"
       const newValue =
         markdown.slice(0, start) + before + selectedText + after + markdown.slice(end)
 
       setMarkdown(newValue, true)
 
-      // Set cursor position around the selected text
+      // Restore selection around the wrapped text
       requestAnimationFrame(() => {
         textarea.focus()
         const newStart = start + before.length
@@ -121,6 +125,7 @@ export function MarkdownEditor() {
             break
         }
       }
+      // Insert two spaces on Tab rather than moving focus
       if (e.key === "Tab") {
         e.preventDefault()
         handleInsertComponent("  ")
@@ -136,7 +141,22 @@ export function MarkdownEditor() {
     [setMarkdown]
   )
 
-  const exportMarkdown = useCallback(() => {
+  const handlePlatformChange = useCallback(
+    (newPlatform: PlatformType) => {
+      setPlatform(newPlatform)
+      // Reset the active category if it no longer applies to the new platform
+      if (
+        activeCategory !== "all" &&
+        activeCategory !== "standard" &&
+        activeCategory !== newPlatform
+      ) {
+        setActiveCategory("all")
+      }
+    },
+    [activeCategory]
+  )
+
+  function exportMarkdown() {
     const blob = new Blob([markdown], { type: "text/markdown" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -144,9 +164,9 @@ export function MarkdownEditor() {
     a.download = "document.md"
     a.click()
     URL.revokeObjectURL(url)
-  }, [markdown])
+  }
 
-  const exportRaw = useCallback(() => {
+  function exportRaw() {
     const blob = new Blob([markdown], { type: "text/plain" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -154,11 +174,12 @@ export function MarkdownEditor() {
     a.target = "_blank"
     a.click()
     URL.revokeObjectURL(url)
-  }, [markdown])
+  }
 
-  const exportHTML = () => {
+  const exportHTML = useCallback(() => {
     if (!previewRef.current) return
 
+    // Collect all active CSS rules from the document to inline into the export
     const styleSheets = Array.from(document.styleSheets)
       .map((sheet) => {
         try {
@@ -208,15 +229,18 @@ body {
     a.download = "document.html"
     a.click()
     URL.revokeObjectURL(url)
-  }
+  }, [])
 
   const exportPDF = useCallback(() => {
     if (!previewRef.current) return
 
     const content = previewRef.current.innerHTML
-    const win = window.open("", "_blank")
 
-    win!.document.write(`
+    // Open a new window with Tailwind and the preview content, then trigger print
+    const win = window.open("", "_blank")
+    if (!win) return
+
+    win.document.write(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -251,19 +275,20 @@ ${content}
 </html>
 `)
 
-    win!.document.close()
+    win.document.close()
   }, [])
 
+  // Switch to editor-only view on mobile where split mode doesn't fit
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768 && viewMode === "split") {
-        setViewMode("editor")
+      if (window.innerWidth < 768) {
+        setViewMode((prev) => (prev === "split" ? "editor" : prev))
       }
     }
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [viewMode])
+  }, [])
 
   return (
     <div className="bg-background flex h-screen flex-col">
@@ -283,20 +308,7 @@ ${content}
 
       <div className="border-border bg-toolbar-bg toolbar-scroll flex items-center gap-2 border-b px-2 py-1">
         <div className="shrink-0">
-          <PlatformSelector
-            platform={platform}
-            onPlatformChange={(newPlatform) => {
-              setPlatform(newPlatform)
-
-              if (
-                activeCategory !== "all" &&
-                activeCategory !== "standard" &&
-                activeCategory !== newPlatform
-              ) {
-                setActiveCategory("all")
-              }
-            }}
-          />
+          <PlatformSelector platform={platform} onPlatformChange={handlePlatformChange} />
         </div>
         <div className="bg-border h-5 w-px shrink-0" />
         <FormattingToolbar
@@ -322,7 +334,7 @@ ${content}
 
       <div className="relative flex flex-1 overflow-hidden">
         <div className="flex flex-1 overflow-hidden">
-          {/* Editor */}
+          {/* Editor pane */}
           {(viewMode === "split" || viewMode === "editor") && (
             <div
               className={`flex flex-col ${viewMode === "split" ? "border-border w-1/2 border-r" : "w-full"}`}
@@ -348,7 +360,7 @@ ${content}
             </div>
           )}
 
-          {/* Preview */}
+          {/* Preview pane */}
           {(viewMode === "split" || viewMode === "preview") && (
             <div className={`flex flex-col ${viewMode === "split" ? "w-1/2" : "w-full"}`}>
               <div className="border-border bg-muted/30 flex items-center justify-between border-b px-4 py-1.5">
@@ -366,7 +378,7 @@ ${content}
           )}
         </div>
 
-        {/* Component Panel - overlays on small screens, sidebar on large */}
+        {/* Component panel - overlays on small screens, sidebar on large */}
         <ComponentPanel
           activeCategory={activeCategory}
           isOpen={componentPanelOpen}
@@ -377,7 +389,7 @@ ${content}
         />
       </div>
 
-      {/* Mobile stats bar */}
+      {/* Mobile stats bar - visible below lg where the header stats are hidden */}
       <div className="border-border bg-toolbar-bg flex items-center justify-between border-t px-4 py-1.5 lg:hidden">
         <div className="text-muted-foreground flex items-center gap-3 text-[10px]">
           <span>{stats.words} words</span>

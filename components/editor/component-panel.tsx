@@ -1,3 +1,8 @@
+/**
+ * @file component-panel.tsx
+ * @description Sliding panel that lists insertable markdown components, filtered by platform and search query.
+ */
+
 "use client"
 
 import { useState } from "react"
@@ -58,6 +63,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { type PlatformType } from "./platform-selector"
 
+/** Maps component icon identifiers to their corresponding Lucide icon elements. */
 const iconMap: Record<string, React.ReactNode> = {
   "heading-1": <Heading1 className="h-3.5 w-3.5" />,
   "heading-2": <Heading2 className="h-3.5 w-3.5" />,
@@ -102,6 +108,7 @@ const iconMap: Record<string, React.ReactNode> = {
   palette: <Palette className="h-3.5 w-3.5" />,
 }
 
+/** Badge colours for each platform category label. */
 const categoryConfig: Record<
   PlatformStyleType,
   { label: string; backgroundColor: string; textColor: string }
@@ -141,7 +148,7 @@ export function ComponentPanel({
 
     if (activeCategory === "all") return matchesSearch
 
-    // Check which category this component belongs to
+    // A component is either standard or platform-specific - check which bucket it belongs to
     const isStandard = PLATFORM_COMPONENTS.standard.some((c) => c.id === comp.id)
     const isPlatformSpecific = PLATFORM_COMPONENTS[platform as PlatformStyleType]?.some(
       (c) => c.id === comp.id
@@ -205,6 +212,7 @@ export function ComponentPanel({
         >
           Standard
         </Button>
+        {/* Platform-specific category buttons - disabled when not the active platform */}
         {platformCategories.map((cat) => {
           const isCurrentPlatform = cat === platform
           return (
