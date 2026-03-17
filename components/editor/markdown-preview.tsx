@@ -38,6 +38,16 @@ import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import type { PluggableList, Plugin } from "unified"
 
+import {
+  BLOCKQUOTE_STYLE,
+  CODE_STYLES,
+  HEADING_STYLES,
+  HR_STYLE,
+  IMAGE_STYLE,
+  LINK_STYLE,
+  LIST_STYLES,
+  TABLE_STYLES,
+} from "@/lib/markdown-components/styles"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
@@ -937,62 +947,32 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
           <ReactMarkdown
             components={{
               h1: ({ children, ...props }) => (
-                <Heading
-                  as="h1"
-                  platform={platform}
-                  {...props}
-                  className="text-foreground border-border mb-4 scroll-m-20 border-b pb-2 text-2xl font-bold tracking-tight"
-                >
+                <Heading as="h1" platform={platform} {...props} className={HEADING_STYLES.h1}>
                   {children}
                 </Heading>
               ),
               h2: ({ children, ...props }) => (
-                <Heading
-                  as="h2"
-                  platform={platform}
-                  {...props}
-                  className="text-foreground border-border mt-8 mb-3 scroll-m-20 border-b pb-1.5 text-xl font-semibold tracking-tight"
-                >
+                <Heading as="h2" platform={platform} {...props} className={HEADING_STYLES.h2}>
                   {children}
                 </Heading>
               ),
               h3: ({ children, ...props }) => (
-                <Heading
-                  as="h3"
-                  platform={platform}
-                  {...props}
-                  className="text-foreground mt-6 mb-2 scroll-m-20 text-lg font-semibold tracking-tight"
-                >
+                <Heading as="h3" platform={platform} {...props} className={HEADING_STYLES.h3}>
                   {children}
                 </Heading>
               ),
               h4: ({ children, ...props }) => (
-                <Heading
-                  as="h4"
-                  platform={platform}
-                  {...props}
-                  className="text-foreground mt-5 mb-1.5 scroll-m-20 text-base font-semibold tracking-tight"
-                >
+                <Heading as="h4" platform={platform} {...props} className={HEADING_STYLES.h4}>
                   {children}
                 </Heading>
               ),
               h5: ({ children, ...props }) => (
-                <Heading
-                  as="h5"
-                  platform={platform}
-                  {...props}
-                  className="text-foreground mt-4 mb-1 scroll-m-20 text-sm font-semibold tracking-tight"
-                >
+                <Heading as="h5" platform={platform} {...props} className={HEADING_STYLES.h5}>
                   {children}
                 </Heading>
               ),
               h6: ({ children, ...props }) => (
-                <Heading
-                  as="h6"
-                  platform={platform}
-                  {...props}
-                  className="text-muted-foreground mt-4 mb-1 scroll-m-20 text-sm font-medium tracking-tight"
-                >
+                <Heading as="h6" platform={platform} {...props} className={HEADING_STYLES.h6}>
                   {children}
                 </Heading>
               ),
@@ -1025,10 +1005,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 if (isInline) {
                   return (
                     <span style={{ display: "inline-flex", alignItems: "center" }}>
-                      <code
-                        className="md-hover-label-inline bg-muted text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs"
-                        {...props}
-                      >
+                      <code className={`md-hover-label-inline ${CODE_STYLES.inline}`} {...props}>
                         {children}
                         {color && (
                           <span
@@ -1057,7 +1034,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               a: ({ ...props }) => (
                 <a
                   {...props}
-                  className="md-hover-label-inline text-primary hover:text-primary/80 underline underline-offset-2"
+                  className={`md-hover-label-inline ${LINK_STYLE}`}
                   rel="noopener noreferrer"
                   target="_blank"
                 />
@@ -1067,14 +1044,14 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 <img
                   {...props}
                   alt={props.alt || ""}
-                  className="md-hover-label-inline border-border h-auto max-w-full rounded-lg border"
+                  className={`md-hover-label-inline ${IMAGE_STYLE}`}
                   loading="lazy"
                 />
               ),
               ul: ({ className, children, ...props }) => {
                 const isTaskList = className?.includes("contains-task-list")
                 const isPlatformTaskList = ["github", "gitlab", "bitbucket"].includes(platform)
-                const listClasses = `md-hover-label !mt-6 mb-4 ml-6 space-y-2 ${isTaskList && isPlatformTaskList ? "ml-0 list-none pl-0" : "list-disc"}`
+                const listClasses = `md-hover-label ${LIST_STYLES.ul} ${isTaskList && isPlatformTaskList ? LIST_STYLES.task : ""}`
                 if (isTaskList && !isPlatformTaskList) {
                   if (platform === "standard")
                     return (
@@ -1105,13 +1082,13 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         children.map((child, idx) => {
                           const c = extractTaskText(child)
                           return c ? (
-                            <li key={idx} className="leading-relaxed">
+                            <li key={idx} className={LIST_STYLES.item}>
                               {c}
                             </li>
                           ) : null
                         })
                       ) : (
-                        <li className="leading-relaxed">{children}</li>
+                        <li className={LIST_STYLES.item}>{children}</li>
                       )}
                     </ul>
                   )
@@ -1123,7 +1100,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 )
               },
               ol: ({ ...props }) => (
-                <ol {...props} className="md-hover-label my-2 ml-4 list-decimal space-y-1" />
+                <ol {...props} className={`md-hover-label ${LIST_STYLES.ol}`} />
               ),
               li: ({ children, ...props }) => {
                 // On the standard platform, render task list markers as plain text
@@ -1149,14 +1126,14 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   }
                   const filtered = Array.isArray(children) ? children.map(filter) : filter(children)
                   return (
-                    <li {...props} className="leading-relaxed">
+                    <li {...props} className={LIST_STYLES.item}>
                       {marker}
                       {filtered}
                     </li>
                   )
                 }
                 return (
-                  <li {...props} className="leading-relaxed">
+                  <li {...props} className={LIST_STYLES.item}>
                     {children}
                   </li>
                 )
@@ -1200,10 +1177,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 }
 
                 return (
-                  <blockquote
-                    {...props}
-                    className="md-hover-label border-primary/40 text-muted-foreground my-4 border-l-4 pl-4 italic"
-                  >
+                  <blockquote {...props} className={`md-hover-label ${BLOCKQUOTE_STYLE}`}>
                     {children}
                   </blockquote>
                 )
@@ -1264,7 +1238,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                         {headings.map((h, i) => (
                           <li key={i} style={{ paddingLeft: `${(h.depth - minDepth) * 16}px` }}>
                             <a
-                              className="text-primary hover:text-primary/70 text-sm underline-offset-2 hover:underline"
+                              className={`text-sm underline-offset-2 hover:underline ${LINK_STYLE}`}
                               href={`#${h.id}`}
                             >
                               {h.text}
@@ -1291,7 +1265,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   </div>
                 )
               },
-              hr: () => <hr className="md-hover-label border-border my-8" />,
+              hr: () => <hr className={`md-hover-label ${HR_STYLE}`} />,
               pre: ({ className, children, node, ...props }) => {
                 let lang = ""
                 const fc = node?.children?.[0]
@@ -1330,10 +1304,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                   )
                 }
                 return (
-                  <pre
-                    {...props}
-                    className="md-hover-label border-border bg-muted/50 my-4 overflow-x-auto rounded-lg border p-4 text-sm"
-                  >
+                  <pre {...props} className={`md-hover-label ${CODE_STYLES.block}`}>
                     {children}
                   </pre>
                 )
@@ -1350,40 +1321,30 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               table: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
                 return (
-                  <div className="md-hover-label my-6 w-full overflow-y-auto">
-                    <table {...props} className="w-full overflow-hidden rounded-lg" />
+                  <div className={`md-hover-label ${TABLE_STYLES.wrapper}`}>
+                    <table {...props} className={TABLE_STYLES.table} />
                   </div>
                 )
               },
               thead: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return <thead {...props} className="bg-muted/50 border-b" />
+                return <thead {...props} className={TABLE_STYLES.thead} />
               },
               tbody: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return <tbody {...props} className="divide-border divide-y" />
+                return <tbody {...props} className={TABLE_STYLES.tbody} />
               },
               tr: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return <tr {...props} className="hover:bg-muted/30 transition-colors" />
+                return <tr {...props} className={TABLE_STYLES.tr} />
               },
               th: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return (
-                  <th
-                    {...props}
-                    className="text-foreground border-r px-4 py-3 text-left font-semibold last:border-0"
-                  />
-                )
+                return <th {...props} className={TABLE_STYLES.th} />
               },
               td: ({ ...props }) => {
                 if (!["github", "gitlab", "bitbucket"].includes(platform)) return props.children
-                return (
-                  <td
-                    {...props}
-                    className="text-muted-foreground border-r px-4 py-3 last:border-0"
-                  />
-                )
+                return <td {...props} className={TABLE_STYLES.td} />
               },
               dl: ({ children }) => (
                 <dl className="border-muted-foreground my-6 space-y-4 border-l-2 pl-4">
