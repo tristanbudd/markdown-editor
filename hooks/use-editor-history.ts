@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 /**
  * @file use-editor-history.ts
@@ -28,6 +28,13 @@ export function useEditorHistory(initialValue: string) {
   // Tracks the last value that was committed to history, used to avoid
   // creating duplicate entries when the debounce fires with no new changes
   const lastSavedRef = useRef(initialValue)
+
+  // Clear any pending debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   const set = useCallback((newValue: string, immediate = false) => {
     if (immediate) {

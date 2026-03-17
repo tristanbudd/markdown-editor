@@ -93,7 +93,7 @@ export function EditorHeader({
 }: EditorHeaderProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [pendingFile, setPendingFile] = useState<{ file: File; hasKnownExt: boolean } | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMsg, setDialogMsg] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -126,7 +126,7 @@ export function EditorHeader({
 
     // If the editor already has content, confirm before overwriting
     if (hasContent) {
-      setPendingFile(file)
+      setPendingFile({ file, hasKnownExt })
       setConfirmOpen(true)
       return
     }
@@ -177,9 +177,7 @@ export function EditorHeader({
 
   function handleDialogAction() {
     if (pendingFile) {
-      const ext = "." + pendingFile.name.split(".").pop()?.toLowerCase()
-      const hasKnownExt = ALLOWED_EXTENSIONS.includes(ext)
-      importFile(pendingFile, hasKnownExt)
+      importFile(pendingFile.file, pendingFile.hasKnownExt)
     }
     setPendingFile(null)
     setConfirmOpen(false)

@@ -38,11 +38,13 @@ export const PLATFORM_COMPONENTS: Record<PlatformStyleType, InsertableComponent[
  * plus any platform-specific additions. Returns only standard components
  * when platform is "standard" to avoid duplication.
  */
+const COMBINED_CACHE: Partial<Record<PlatformStyleType, InsertableComponent[]>> = {}
+
 export function getComponentsForPlatform(platform: string): InsertableComponent[] {
-  const standard = STANDARD_COMPONENTS
-  if (platform === "standard") {
-    return standard
+  if (platform === "standard") return STANDARD_COMPONENTS
+  const key = platform as PlatformStyleType
+  if (!COMBINED_CACHE[key]) {
+    COMBINED_CACHE[key] = [...STANDARD_COMPONENTS, ...(PLATFORM_COMPONENTS[key] || [])]
   }
-  const platformSpecific = PLATFORM_COMPONENTS[platform as PlatformStyleType] || []
-  return [...standard, ...platformSpecific]
+  return COMBINED_CACHE[key]!
 }

@@ -42,6 +42,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 import type { PlatformType } from "./platform-selector"
 
+const COLOR_HEX_RE = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
+const COLOR_RGB_RE = /^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/
+const COLOR_HSL_RE = /^hsl\s*\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/
+
 type TaskElementProps = {
   children?: ReactNode
   checked?: boolean
@@ -61,6 +65,7 @@ interface HeadingProps extends HTMLAttributes<HTMLElement> {
   as?: ElementType
   id?: string
   children: ReactNode
+  platform: PlatformType
 }
 
 interface HastNode {
@@ -851,6 +856,35 @@ function isEmptyTripleFenceHast(node: HastNode): boolean {
   return r3.length === 0
 }
 
+/**
+ * Custom heading component that conditionally renders anchor links based on platform and presence of an ID.
+ * Anchor links are only shown for GitHub where heading IDs are standardized.
+ */
+function Heading({
+  as: Tag = "h2",
+  children,
+  className = "",
+  id,
+  platform,
+  ...props
+}: HeadingProps) {
+  const showAnchor = platform === "github" && id
+  return (
+    <Tag {...props} className={`group relative ${className}`} id={id}>
+      {showAnchor && (
+        <a
+          aria-label="Anchor link"
+          className="text-muted-foreground hover:text-foreground absolute top-1/2 -left-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
+          href={`#${id}`}
+        >
+          <Link className="h-4 w-4" />
+        </a>
+      )}
+      {children}
+    </Tag>
+  )
+}
+
 export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
   function MarkdownPreview({ content, platform }, ref) {
     // Build the remark plugin list based on the active platform
@@ -894,25 +928,6 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
       return plugins
     }, [platform])
 
-    const Heading = ({ as: Tag = "h2", children, className = "", id, ...props }: HeadingProps) => {
-      // Anchor links are only shown on GitHub where heading IDs are standard
-      const showAnchor = platform === "github" && id
-      return (
-        <Tag {...props} className={`group relative ${className}`} id={id}>
-          {showAnchor && (
-            <a
-              aria-label="Anchor link"
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 -left-6 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
-              href={`#${id}`}
-            >
-              <Link className="h-4 w-4" />
-            </a>
-          )}
-          {children}
-        </Tag>
-      )
-    }
-
     return (
       <ScrollArea className="h-full">
         <div
@@ -924,6 +939,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               h1: ({ children, ...props }) => (
                 <Heading
                   as="h1"
+                  platform={platform}
                   {...props}
                   className="text-foreground border-border mb-4 scroll-m-20 border-b pb-2 text-2xl font-bold tracking-tight"
                 >
@@ -933,6 +949,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               h2: ({ children, ...props }) => (
                 <Heading
                   as="h2"
+                  platform={platform}
                   {...props}
                   className="text-foreground border-border mt-8 mb-3 scroll-m-20 border-b pb-1.5 text-xl font-semibold tracking-tight"
                 >
@@ -942,6 +959,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               h3: ({ children, ...props }) => (
                 <Heading
                   as="h3"
+                  platform={platform}
                   {...props}
                   className="text-foreground mt-6 mb-2 scroll-m-20 text-lg font-semibold tracking-tight"
                 >
@@ -951,6 +969,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               h4: ({ children, ...props }) => (
                 <Heading
                   as="h4"
+                  platform={platform}
                   {...props}
                   className="text-foreground mt-5 mb-1.5 scroll-m-20 text-base font-semibold tracking-tight"
                 >
@@ -960,6 +979,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               h5: ({ children, ...props }) => (
                 <Heading
                   as="h5"
+                  platform={platform}
                   {...props}
                   className="text-foreground mt-4 mb-1 scroll-m-20 text-sm font-semibold tracking-tight"
                 >
@@ -969,6 +989,7 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
               h6: ({ children, ...props }) => (
                 <Heading
                   as="h6"
+                  platform={platform}
                   {...props}
                   className="text-muted-foreground mt-4 mb-1 scroll-m-20 text-sm font-medium tracking-tight"
                 >
@@ -995,14 +1016,11 @@ export const MarkdownPreview = forwardRef<HTMLDivElement, MarkdownPreviewProps>(
                 const codeValue = Array.isArray(children) ? children.join("") : children
 
                 // Show a colour swatch next to inline hex/rgb/hsl values
-                const hexRe = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
-                const rgbRe = /^rgb\s*\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/
-                const hslRe = /^hsl\s*\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/
                 let color = null
                 if (typeof codeValue === "string") {
-                  if (hexRe.test(codeValue)) color = codeValue
-                  else if (rgbRe.test(codeValue)) color = codeValue
-                  else if (hslRe.test(codeValue)) color = codeValue
+                  if (COLOR_HEX_RE.test(codeValue)) color = codeValue
+                  else if (COLOR_RGB_RE.test(codeValue)) color = codeValue
+                  else if (COLOR_HSL_RE.test(codeValue)) color = codeValue
                 }
                 if (isInline) {
                   return (
