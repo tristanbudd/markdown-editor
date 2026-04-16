@@ -110,7 +110,7 @@ importers:
     devDependencies:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: ^4.7.1
-        version: 4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.1)
+        version: 4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.3)
       '@tailwindcss/postcss':
         specifier: ^4.2.2
         version: 4.2.2
@@ -134,7 +134,7 @@ importers:
         version: 10.1.8(eslint@9.39.3(jiti@2.6.1))
       eslint-plugin-prettier:
         specifier: ^5.5.5
-        version: 5.5.5(eslint-config-prettier@10.1.8(eslint@9.39.3(jiti@2.6.1)))(eslint@9.39.3(jiti@2.6.1))(prettier@3.8.1)
+        version: 5.5.5(eslint-config-prettier@10.1.8(eslint@9.39.3(jiti@2.6.1)))(eslint@9.39.3(jiti@2.6.1))(prettier@3.8.3)
       eslint-plugin-react:
         specifier: ^7.37.5
         version: 7.37.5(eslint@9.39.3(jiti@2.6.1))
@@ -148,11 +148,11 @@ importers:
         specifier: ^16.4.0
         version: 16.4.0
       prettier:
-        specifier: ^3.8.1
-        version: 3.8.1
+        specifier: ^3.8.3
+        version: 3.8.3
       prettier-plugin-tailwindcss:
         specifier: ^0.7.2
-        version: 0.7.2(@ianvs/prettier-plugin-sort-imports@4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.1))(prettier@3.8.1)
+        version: 0.7.2(@ianvs/prettier-plugin-sort-imports@4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.3))(prettier@3.8.3)
       shadcn:
         specifier: ^4.2.0
         version: 4.2.0(@types/node@25.5.2)(typescript@6.0.2)
@@ -2203,8 +2203,8 @@ packages:
   '@rolldown/pluginutils@1.0.0-rc.13':
     resolution: {integrity: sha512-3ngTAv6F/Py35BsYbeeLeecvhMKdsKm4AoOETVhAA+Qc8nrA2I0kF7oa93mE9qnIurngOSpMnQ0x2nQY2FPviA==}
 
-  '@rolldown/pluginutils@1.0.0-rc.15':
-    resolution: {integrity: sha512-UromN0peaE53IaBRe9W7CjrZgXl90fqGpK+mIZbA3qSTeYqg3pqpROBdIPvOG3F5ereDHNwoHBI2e50n1BDr1g==}
+  '@rolldown/pluginutils@1.0.0-rc.16':
+    resolution: {integrity: sha512-45+YtqxLYKDWQouLKCrpIZhke+nXxhsw+qAHVzHDVwttyBlHNBVs2K25rDXrZzhpTp9w1FlAlvweV1H++fdZoA==}
 
   '@rollup/plugin-alias@6.0.0':
     resolution: {integrity: sha512-tPCzJOtS7uuVZd+xPhoy5W4vThe6KWXNmsFCNktaAh5RTqcLiSfT4huPQIXkgJ6YCOjJHvecOAzQxLFhPxKr+g==}
@@ -5879,8 +5879,8 @@ packages:
       prettier-plugin-svelte:
         optional: true
 
-  prettier@3.8.1:
-    resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
+  prettier@3.8.3:
+    resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -7472,7 +7472,7 @@ snapshots:
   '@dxup/nuxt@0.3.2(magicast@0.5.2)':
     dependencies:
       '@dxup/unimport': 0.1.2
-      '@nuxt/kit': 4.3.1(magicast@0.5.2)
+      '@nuxt/kit': 4.4.2(magicast@0.5.2)
       chokidar: 5.0.0
       pathe: 2.0.3
       tinyglobby: 0.2.16
@@ -7659,13 +7659,13 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@ianvs/prettier-plugin-sort-imports@4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.1)':
+  '@ianvs/prettier-plugin-sort-imports@4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.3)':
     dependencies:
       '@babel/generator': 7.29.1
       '@babel/parser': 7.29.0
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
-      prettier: 3.8.1
+      prettier: 3.8.3
       semver: 7.7.4
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.30
@@ -9338,7 +9338,7 @@ snapshots:
   '@rolldown/pluginutils@1.0.0-rc.13':
     optional: true
 
-  '@rolldown/pluginutils@1.0.0-rc.15':
+  '@rolldown/pluginutils@1.0.0-rc.16':
     optional: true
 
   '@rollup/plugin-alias@6.0.0(rollup@4.60.1)':
@@ -9856,7 +9856,7 @@ snapshots:
       '@babel/core': 7.29.0
       '@babel/plugin-syntax-typescript': 7.28.6(@babel/core@7.29.0)
       '@babel/plugin-transform-typescript': 7.28.6(@babel/core@7.29.0)
-      '@rolldown/pluginutils': 1.0.0-rc.15
+      '@rolldown/pluginutils': 1.0.0-rc.16
       '@vue/babel-plugin-jsx': 2.0.1(@babel/core@7.29.0)
       vite: 7.3.2(@types/node@25.5.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(yaml@2.8.3)
       vue: 3.5.30(typescript@6.0.2)
@@ -11157,10 +11157,10 @@ snapshots:
       safe-regex-test: 1.1.0
       string.prototype.includes: 2.0.1
 
-  eslint-plugin-prettier@5.5.5(eslint-config-prettier@10.1.8(eslint@9.39.3(jiti@2.6.1)))(eslint@9.39.3(jiti@2.6.1))(prettier@3.8.1):
+  eslint-plugin-prettier@5.5.5(eslint-config-prettier@10.1.8(eslint@9.39.3(jiti@2.6.1)))(eslint@9.39.3(jiti@2.6.1))(prettier@3.8.3):
     dependencies:
       eslint: 9.39.3(jiti@2.6.1)
-      prettier: 3.8.1
+      prettier: 3.8.3
       prettier-linter-helpers: 1.0.1
       synckit: 0.11.12
     optionalDependencies:
@@ -13922,13 +13922,13 @@ snapshots:
     dependencies:
       fast-diff: 1.3.0
 
-  prettier-plugin-tailwindcss@0.7.2(@ianvs/prettier-plugin-sort-imports@4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.1))(prettier@3.8.1):
+  prettier-plugin-tailwindcss@0.7.2(@ianvs/prettier-plugin-sort-imports@4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.3))(prettier@3.8.3):
     dependencies:
-      prettier: 3.8.1
+      prettier: 3.8.3
     optionalDependencies:
-      '@ianvs/prettier-plugin-sort-imports': 4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.1)
+      '@ianvs/prettier-plugin-sort-imports': 4.7.1(@vue/compiler-sfc@3.5.30)(prettier@3.8.3)
 
-  prettier@3.8.1: {}
+  prettier@3.8.3: {}
 
   pretty-bytes@7.1.0:
     optional: true
