@@ -108,6 +108,11 @@
     ]
   },
   "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "msw"
+    ],
     "overrides": {
       "serialize-javascript": "~7.0.3"
     }
